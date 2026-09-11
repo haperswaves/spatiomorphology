@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spatiomorphology - Spatial Panning Generator for Ableton Live</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-[#0a0d14] text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
+
+  <!-- Top Navigation / Studio Header -->
+  <header class="bg-[#111622] border-b border-[#1f273d] px-6 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-md">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 via-teal-400 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-base shadow-lg shadow-cyan-500/20">
+          S
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-wider text-slate-100 uppercase">Spatiomorphology</h1>
+          <p class="text-[10px] text-cyan-400 font-medium">Ableton Surround Panner Controller</p>
+        </div>
+      </div>
+
+      <!-- Speaker Configuration Selector -->
+      <div class="flex items-center gap-2 bg-[#161c2c] border border-[#232c42] rounded-lg px-3 py-1.5 ml-2">
+        <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Layout:</span>
+        <select id="layoutSelect" class="bg-transparent text-xs text-cyan-300 font-semibold focus:outline-none cursor-pointer">
+          <option value="quad">Quadraphonic (4.0)</option>
+          <option value="stereo">Stereo (2.0)</option>
+          <option value="octophonic">Octophonic Ring (8.0)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Presets Selector & Management -->
+    <div class="flex items-center gap-2">
+      <select id="presetSelect" class="bg-[#161c2c] border border-[#232c42] rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:border-cyan-400 cursor-pointer min-w-[240px]">
+        <!-- Options injected dynamically -->
+      </select>
+      <button id="exportPresetsBtn" title="Export Presets as JSON" class="p-1.5 bg-[#161c2c] hover:bg-[#1f273d] border border-[#232c42] text-slate-300 hover:text-cyan-300 rounded-lg text-xs transition">
+        ⬇ Export
+      </button>
+      <button id="importPresetsBtn" title="Import Presets JSON" class="p-1.5 bg-[#161c2c] hover:bg-[#1f273d] border border-[#232c42] text-slate-300 hover:text-cyan-300 rounded-lg text-xs transition">
+        ⬆ Import
+      </button>
+      <input type="file" id="presetFileInput" accept=".json" class="hidden">
+    </div>
+
+    <!-- Transport & Master Clock -->
+    <div class="flex items-center gap-3">
+      <button id="playPauseBtn" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-lg shadow transition">
+        ⏸ Pause
+      </button>
+      <button id="resetBtn" class="px-3 py-1.5 bg-[#161c2c] hover:bg-[#1f273d] border border-[#232c42] text-slate-300 hover:text-white text-xs font-medium rounded-lg transition">
+        ⏮ Reset
+      </button>
+      <div class="font-mono text-xs text-slate-400 bg-[#0e1320] px-3 py-1.5 rounded-lg border border-[#232c42] flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="timeDisplay">0:00.0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Phase Progress Bar -->
+  <div class="w-full bg-[#111622] h-1">
+    <div id="phaseBar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-0 transition-all duration-75"></div>
+  </div>
+
+  <!-- Main Grid Workspace -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 max-w-[1920px] mx-auto w-full">
+
+    <!-- LEFT COLUMN: Trajectory Bank & Spatial Transformations (4 cols) -->
+    <section class="lg:col-span-3 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-80px)] pr-1">
+
+      <!-- Shape Selection Card -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Trajectory Bank</h2>
+          <span id="shapeCategory" class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">Geometric</span>
+        </div>
+
+        <select id="shapeSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-2 text-xs font-medium text-slate-100 mb-2 focus:border-cyan-400">
+          <!-- Injected via JS -->
+        </select>
+
+        <p id="shapeDesc" class="text-[11px] text-slate-400 leading-relaxed mb-3 bg-[#0e1320] p-2 rounded-lg border border-[#1a2133]">
+          Continuous circular or elliptic perimeter orbit, evoking spatial enclosure.
+        </p>
+
+        <!-- Dynamic Shape-Specific Parameters -->
+        <div class="border-t border-[#1f273d] pt-3">
+          <h3 class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <span>Shape Parameters</span>
+            <span class="text-[10px] text-slate-500 font-normal">Parametric Formula</span>
+          </h3>
+          <div id="shapeParamsContainer" class="flex flex-col gap-3">
+            <!-- Dynamic parameter sliders rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Spatial Transform & Scaling Card -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Spatial Transformation</h2>
+
+        <div class="space-y-3">
+          <!-- Master Scale -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Master Amplitude</span>
+              <span id="masterScaleVal" class="text-cyan-400 font-mono text-[11px]">90%</span>
+            </div>
+            <input type="range" id="masterScaleSlider" min="0.1" max="1.0" step="0.01" value="0.9" class="w-full">
+          </div>
+
+          <!-- X & Y Aspect Scale -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Width (X)</span>
+                <span id="scaleXVal" class="text-cyan-400 font-mono text-[11px]">100%</span>
+              </div>
+              <input type="range" id="scaleXSlider" min="0.1" max="1.5" step="0.05" value="1.0" class="w-full">
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Depth (Y)</span>
+                <span id="scaleYVal" class="text-cyan-400 font-mono text-[11px]">100%</span>
+              </div>
+              <input type="range" id="scaleYSlider" min="0.1" max="1.5" step="0.05" value="1.0" class="w-full">
+            </div>
+          </div>
+
+          <!-- Center Offset (X0, Y0) -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Center X₀</span>
+                <span id="centerXVal" class="text-cyan-400 font-mono text-[11px]">0.00</span>
+              </div>
+              <input type="range" id="centerXSlider" min="-1.0" max="1.0" step="0.02" value="0" class="w-full">
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Center Y₀</span>
+                <span id="centerYVal" class="text-cyan-400 font-mono text-[11px]">0.00</span>
+              </div>
+              <input type="range" id="centerYSlider" min="-1.0" max="1.0" step="0.02" value="0" class="w-full">
+            </div>
+          </div>
+          <button id="resetCenterBtn" class="w-full py-1 text-[11px] bg-[#161c2c] hover:bg-[#1f273d] text-slate-400 hover:text-slate-200 border border-[#232c42] rounded-lg transition">
+            Reset Center (0, 0)
+          </button>
+        </div>
+      </div>
+
+      <!-- Direction & Phase Card -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Direction & Phase</h2>
+
+        <div class="space-y-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-slate-400">Trajectory Direction</label>
+            <select id="directionSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-2 text-xs text-slate-100 focus:border-cyan-400">
+              <option value="cw">Clockwise / Forward (CW)</option>
+              <option value="ccw">Counter-Clockwise / Reverse (CCW)</option>
+              <option value="pingpong">Ping-Pong / Alternating Bounce</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Phase Offset</span>
+                <span id="phaseOffsetVal" class="text-cyan-400 font-mono text-[11px]">0°</span>
+              </div>
+              <input type="range" id="phaseOffsetSlider" min="0" max="360" step="5" value="0" class="w-full">
+            </div>
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-400">Start Angle</span>
+                <span id="startAngleVal" class="text-cyan-400 font-mono text-[11px]">0°</span>
+              </div>
+              <input type="range" id="startAngleSlider" min="0" max="360" step="5" value="0" class="w-full">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CENTER COLUMN: Visual Spatial Stage & Speaker Field (6 cols) -->
+    <section class="lg:col-span-6 flex flex-col gap-3">
+
+      <!-- Visualizer Card -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 flex-1 flex flex-col shadow-lg relative">
+
+        <!-- Visualizer Top Overlay -->
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Surround Acoustic Field</span>
+          </div>
+
+          <!-- Visual Options Toggles -->
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
+              <input type="checkbox" id="showTrajectoryCheck" checked class="rounded accent-cyan-500"> Path
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
+              <input type="checkbox" id="showTrailCheck" checked class="rounded accent-cyan-500"> Trail
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
+              <input type="checkbox" id="showMetersCheck" checked class="rounded accent-cyan-500"> Meters
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
+              <input type="checkbox" id="showGridCheck" checked class="rounded accent-cyan-500"> Grid
+            </label>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative flex-1 w-full min-h-[480px] bg-[#070a10] rounded-xl overflow-hidden border border-[#1a2133] flex items-center justify-center">
+          <canvas id="pannerCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+          <!-- Floating Helper Badge -->
+          <div class="absolute bottom-3 left-3 bg-[#0d121df0] backdrop-blur-md px-2.5 py-1 rounded-md border border-[#232c42] text-[10px] text-slate-400 pointer-events-none">
+            Click & drag to reposition Center (X₀, Y₀)
+          </div>
+        </div>
+
+        <!-- Real-time Surround Panner Parameter Readout Bar -->
+        <div class="mt-3 grid grid-cols-4 sm:grid-cols-8 gap-2 bg-[#0c101a] p-2.5 rounded-xl border border-[#1e2638]">
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">X-Axis</span>
+            <span id="monX" class="font-mono text-xs font-bold text-cyan-400">0.000</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Y-Axis</span>
+            <span id="monY" class="font-mono text-xs font-bold text-cyan-400">0.000</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Rotation</span>
+            <span id="monRot" class="font-mono text-xs font-bold text-teal-400">0.0°</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Focus</span>
+            <span id="monFocus" class="font-mono text-xs font-bold text-emerald-400">100%</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Center</span>
+            <span id="monCenter" class="font-mono text-xs font-bold text-amber-400">50%</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Smooth</span>
+            <span id="monSmooth" class="font-mono text-xs font-bold text-pink-400">15%</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Velocity</span>
+            <span id="monVelocity" class="font-mono text-xs font-medium text-slate-300">0.00 u/s</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Frequency</span>
+            <span id="monFreq" class="font-mono text-xs font-medium text-slate-300">0.500 Hz</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Spectromorphological Notes Box -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-3 text-xs text-slate-400 flex items-start gap-3">
+        <div class="text-cyan-400 text-base font-bold mt-0.5">ℹ</div>
+        <div class="flex-1">
+          <p class="font-semibold text-slate-300 mb-0.5">Spectromorphological Gesture Context</p>
+          <p class="text-[11px] leading-relaxed text-slate-400" id="presetDesc">
+            Spatial panning trajectories express energy profiles: centrifugal vortexes project outward to the perimeter, harmonic Lissajous ribbons weave through quad space, and staccato polygon vertices articulate leaping point-source locations.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: Ableton Surround Panner Controls & Web MIDI (3 cols) -->
+    <section class="lg:col-span-3 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-80px)] pr-1">
+
+      <!-- Surround Panner Target Parameters Card -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Surround Panner Controls</h2>
+          <span class="text-[10px] text-emerald-400 font-mono">Live Target</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Rotation -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Rotation</span>
+              <span id="rotationVal" class="text-teal-400 font-mono text-[11px]">0°</span>
+            </div>
+            <input type="range" id="rotationSlider" min="-180" max="180" step="1" value="0" class="w-full">
+          </div>
+
+          <!-- Auto-Rotate Spin -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Auto-Rotate Spin</span>
+              <span id="autoRotateVal" class="text-teal-400 font-mono text-[11px]">0°/s</span>
+            </div>
+            <input type="range" id="autoRotateSlider" min="-90" max="90" step="2" value="0" class="w-full">
+          </div>
+
+          <!-- Focus -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Focus (Dispersion)</span>
+              <span id="focusVal" class="text-emerald-400 font-mono text-[11px]">100%</span>
+            </div>
+            <input type="range" id="focusSlider" min="0" max="100" step="1" value="100" class="w-full">
+            <span class="text-[10px] text-slate-500">0% = Diffuse ambient / 100% = Pinpoint</span>
+          </div>
+
+          <!-- Center -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Center Bleed</span>
+              <span id="centerVal" class="text-amber-400 font-mono text-[11px]">50%</span>
+            </div>
+            <input type="range" id="centerSlider" min="0" max="100" step="1" value="50" class="w-full">
+          </div>
+
+          <!-- Smooth -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-300 font-medium">Smooth (Lag Filter)</span>
+              <span id="smoothVal" class="text-pink-400 font-mono text-[11px]">15%</span>
+            </div>
+            <input type="range" id="smoothSlider" min="0" max="100" step="1" value="15" class="w-full">
+            <span class="text-[10px] text-slate-500">Exponential moving average damping</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Temporal Clock & Sync Card -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Temporal Clock & Rate</h2>
+
+        <!-- Rate Mode Radio Switch -->
+        <div class="flex items-center gap-2 p-1 bg-[#161c2c] rounded-lg border border-[#232c42] mb-3 text-xs">
+          <label class="flex-1 text-center py-1 rounded cursor-pointer transition font-medium has-[:checked]:bg-cyan-500 has-[:checked]:text-slate-950 text-slate-400">
+            <input type="radio" name="rateMode" id="rateModeSync" value="sync" checked class="hidden"> Beat Synced
+          </label>
+          <label class="flex-1 text-center py-1 rounded cursor-pointer transition font-medium has-[:checked]:bg-cyan-500 has-[:checked]:text-slate-950 text-slate-400">
+            <input type="radio" name="rateMode" id="rateModeFree" value="free" class="hidden"> Free (Hz)
+          </label>
+        </div>
+
+        <!-- Sync Controls Panel -->
+        <div id="syncControls" class="space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-xs text-slate-400">BPM</label>
+            <div class="flex items-center gap-2">
+              <input type="number" id="bpmInput" min="20" max="300" value="120" class="w-16 px-2 py-1 rounded text-xs text-right font-mono">
+            </div>
+          </div>
+          <input type="range" id="bpmSlider" min="40" max="220" step="1" value="120" class="w-full">
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-slate-400">Musical Division</label>
+            <select id="noteDivSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-2 text-xs text-slate-100 focus:border-cyan-400">
+              <!-- Injected via JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Free Controls Panel -->
+        <div id="freeControls" class="space-y-3 hidden">
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-xs text-slate-400">Frequency (Hz)</label>
+            <input type="number" id="freeHzInput" min="0.01" max="20" step="0.05" value="0.5" class="w-20 px-2 py-1 rounded text-xs text-right font-mono">
+          </div>
+          <input type="range" id="freeHzSlider" min="0.02" max="5.0" step="0.02" value="0.5" class="w-full">
+        </div>
+      </div>
+
+      <!-- Web MIDI Controller Card -->
+      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <div id="midiLed" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-colors"></div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Web MIDI Output</h2>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="midiToggle" class="sr-only peer">
+            <div class="w-9 h-5 bg-[#1e2638] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+          </label>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] text-slate-400">MIDI Destination Port</label>
+            <select id="midiPortSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-1.5 text-xs text-slate-100">
+              <option value="">Searching for ports...</option>
+            </select>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="text-[11px] text-slate-400">MIDI Channel</label>
+            <select id="midiChannelSelect" class="bg-[#161c2c] border border-[#232c42] rounded-lg px-2 py-1 text-xs">
+              <option value="1">Channel 1</option>
+              <option value="2">Channel 2</option>
+              <option value="3">Channel 3</option>
+              <option value="4">Channel 4</option>
+              <option value="5">Channel 5</option>
+              <option value="6">Channel 6</option>
+              <option value="7">Channel 7</option>
+              <option value="8">Channel 8</option>
+              <option value="9">Channel 9</option>
+              <option value="10">Channel 10</option>
+              <option value="11">Channel 11</option>
+              <option value="12">Channel 12</option>
+              <option value="13">Channel 13</option>
+              <option value="14">Channel 14</option>
+              <option value="15">Channel 15</option>
+              <option value="16">Channel 16</option>
+            </select>
+          </div>
+
+          <!-- MIDI CC Mapping Table -->
+          <div class="border-t border-[#1f273d] pt-2">
+            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-2">Live CC Assignments</span>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
+                <span class="text-slate-400 text-[11px]">X-Axis:</span>
+                <input type="number" id="ccInputX" min="0" max="127" value="20" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-cyan-400">
+              </div>
+              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
+                <span class="text-slate-400 text-[11px]">Y-Axis:</span>
+                <input type="number" id="ccInputY" min="0" max="127" value="21" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-cyan-400">
+              </div>
+              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
+                <span class="text-slate-400 text-[11px]">Rotation:</span>
+                <input type="number" id="ccInputRot" min="0" max="127" value="22" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-teal-400">
+              </div>
+              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
+                <span class="text-slate-400 text-[11px]">Focus:</span>
+                <input type="number" id="ccInputFocus" min="0" max="127" value="23" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-emerald-400">
+              </div>
+              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
+                <span class="text-slate-400 text-[11px]">Center:</span>
+                <input type="number" id="ccInputCenter" min="0" max="127" value="24" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-amber-400">
+              </div>
+              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
+                <span class="text-slate-400 text-[11px]">Smooth:</span>
+                <input type="number" id="ccInputSmooth" min="0" max="127" value="25" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-pink-400">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

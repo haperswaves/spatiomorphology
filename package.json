@@ -1,0 +1,23 @@
+{
+  "name": "spatiomorphology",
+  "version": "1.0.0",
+  "description": "Spatial trajectory generator and visualizer targeting Ableton Live Surround Panner",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/trajectories.test.mjs",
+    "start": "python serve.py"
+  },
+  "keywords": [
+    "ableton-live",
+    "surround-panner",
+    "spectromorphology",
+    "spatiomorphology",
+    "spatial-audio",
+    "quadraphonic",
+    "octophonic",
+    "web-midi"
+  ],
+  "author": "EAST398",
+  "license": "MIT"
+}

@@ -3,463 +3,1004 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spatiomorphology - Spatial Panning Generator for Ableton Live</title>
+  <title>Spatiomorph - Electroacoustic Trajectory Suite</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#0a0d14] text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
+<body class="personality-pounamu brightness-med-dark min-h-screen flex flex-col selection:bg-emerald-500 selection:text-white">
 
   <!-- Top Navigation / Studio Header -->
-  <header class="bg-[#111622] border-b border-[#1f273d] px-6 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-md">
-    <div class="flex items-center gap-4">
+  <header class="bg-panel-themed border-b border-themed px-4 py-2 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 shadow-md">
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Logo & Title -->
       <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 via-teal-400 to-emerald-400 flex items-center justify-center font-black text-slate-950 text-base shadow-lg shadow-cyan-500/20">
+        <div id="personalityLogo" class="w-7 h-7 rounded-lg flex items-center justify-center font-black text-slate-950 text-sm shadow-md transition-all" style="background: var(--header-grad); color: #ffffff;">
           S
         </div>
         <div>
-          <h1 class="text-sm font-bold tracking-wider text-slate-100 uppercase">Spatiomorphology</h1>
-          <p class="text-[10px] text-cyan-400 font-medium">Ableton Surround Panner Controller</p>
+          <h1 class="text-xs font-bold tracking-wider uppercase" id="appTitle">Spatiomorph</h1>
+          <p class="text-[9px] text-accent-themed font-medium" id="appSubtitle">Electroacoustic Trajectory Suite</p>
         </div>
       </div>
 
-      <!-- Speaker Configuration Selector -->
-      <div class="flex items-center gap-2 bg-[#161c2c] border border-[#232c42] rounded-lg px-3 py-1.5 ml-2">
-        <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Layout:</span>
-        <select id="layoutSelect" class="bg-transparent text-xs text-cyan-300 font-semibold focus:outline-none cursor-pointer">
-          <option value="quad">Quadraphonic (4.0)</option>
-          <option value="stereo">Stereo (2.0)</option>
-          <option value="octophonic">Octophonic Ring (8.0)</option>
+      <!-- Personality Switcher (6 Personalities) -->
+      <div class="flex items-center gap-1.5 bg-card-themed border border-themed rounded-lg px-2 py-1">
+        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Personality:</span>
+        <select id="personalitySelect" class="bg-transparent text-xs text-accent-themed font-bold focus:outline-none cursor-pointer">
+          <option value="pounamu" selected>🌿 Pounamu (Smalley / NZ Jade)</option>
+          <option value="plaifolia">🌼 Plaifolia (Classic / Amber)</option>
+          <option value="biloba">🍂 Biloba (Vande Gorne / Ginkgo)</option>
+          <option value="kornblume">🌾 Kornblume (Blauert / Cornflower)</option>
+          <option value="calcite">💎 Calcite (Barrett / Iceland Spar)</option>
+          <option value="ipe_amarelo">🌳 Ipê-amarelo (Barreiro / Golden Trumpet)</option>
+        </select>
+        <button id="personalityPounamuBtn" class="hidden"></button>
+        <button id="personalityPlaifoliaBtn" class="hidden"></button>
+      </div>
+
+      <!-- Global Theme Brightness Tier Selector -->
+      <div class="flex items-center gap-1 bg-card-themed border border-themed rounded-lg px-2 py-1">
+        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Theme:</span>
+        <select id="brightnessThemeSelect" class="bg-transparent text-xs text-accent-themed font-medium focus:outline-none cursor-pointer">
+          <option value="dark">Dark</option>
+          <option value="med-dark" selected>Medium Dark</option>
+          <option value="med-light">Medium Light</option>
+          <option value="light">Light</option>
+        </select>
+      </div>
+
+      <!-- Speaker Arrangement Selector -->
+      <div class="flex items-center gap-1 bg-card-themed border border-themed rounded-lg px-2 py-1">
+        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Speaker Arrangement:</span>
+        <select id="speakerLayoutSelect" class="bg-transparent text-xs text-accent-themed font-semibold focus:outline-none cursor-pointer">
+          <option value="2ch">2-CH (Stereo Centered)</option>
+          <option value="4ch_room" selected>4-CH Room</option>
+          <option value="4ch_circle">4-CH Circle</option>
+          <option value="4ch_center">4-CH Center</option>
+          <option value="6ch_room">6-CH Room</option>
+          <option value="6ch_circle">6-CH Circle</option>
+          <option value="6ch_center">6-CH Center</option>
+          <option value="8ch_room">8-CH Room</option>
+          <option value="8ch_circle">8-CH Circle</option>
+          <option value="8ch_center">8-CH Center</option>
         </select>
       </div>
     </div>
 
     <!-- Presets Selector & Management -->
     <div class="flex items-center gap-2">
-      <select id="presetSelect" class="bg-[#161c2c] border border-[#232c42] rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:border-cyan-400 cursor-pointer min-w-[240px]">
+      <select id="presetSelect" class="bg-card-themed border border-themed rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:border-emerald-400 cursor-pointer min-w-[200px]">
         <!-- Options injected dynamically -->
       </select>
-      <button id="exportPresetsBtn" title="Export Presets as JSON" class="p-1.5 bg-[#161c2c] hover:bg-[#1f273d] border border-[#232c42] text-slate-300 hover:text-cyan-300 rounded-lg text-xs transition">
+      <button id="exportPresetsBtn" title="Export Presets as JSON" class="px-2 py-1 bg-card-themed hover:opacity-80 border border-themed text-slate-300 rounded text-xs transition">
         ⬇ Export
       </button>
-      <button id="importPresetsBtn" title="Import Presets JSON" class="p-1.5 bg-[#161c2c] hover:bg-[#1f273d] border border-[#232c42] text-slate-300 hover:text-cyan-300 rounded-lg text-xs transition">
+      <button id="importPresetsBtn" title="Import Presets JSON" class="px-2 py-1 bg-card-themed hover:opacity-80 border border-themed text-slate-300 rounded text-xs transition">
         ⬆ Import
       </button>
       <input type="file" id="presetFileInput" accept=".json" class="hidden">
     </div>
 
     <!-- Transport & Master Clock -->
-    <div class="flex items-center gap-3">
-      <button id="playPauseBtn" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-lg shadow transition">
+    <div class="flex items-center gap-2.5">
+      <button id="playPauseBtn" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded shadow transition">
         ⏸ Pause
       </button>
-      <button id="resetBtn" class="px-3 py-1.5 bg-[#161c2c] hover:bg-[#1f273d] border border-[#232c42] text-slate-300 hover:text-white text-xs font-medium rounded-lg transition">
+      <button id="resetBtn" class="px-2.5 py-1 bg-card-themed hover:opacity-80 border border-themed text-slate-300 hover:text-white text-xs font-medium rounded transition">
         ⏮ Reset
       </button>
-      <div class="font-mono text-xs text-slate-400 bg-[#0e1320] px-3 py-1.5 rounded-lg border border-[#232c42] flex items-center gap-2">
+      <div class="font-mono text-xs text-slate-300 bg-input-themed px-2.5 py-1 rounded border border-themed flex items-center gap-2">
         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
         <span id="timeDisplay">0:00.0</span>
       </div>
     </div>
   </header>
 
-  <!-- Phase Progress Bar -->
-  <div class="w-full bg-[#111622] h-1">
-    <div id="phaseBar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-0 transition-all duration-75"></div>
+  <!-- Global Phase Progress Bar -->
+  <div class="w-full bg-panel-themed h-1">
+    <div id="phaseBar" class="h-full w-0 transition-all duration-75" style="background: var(--header-grad);"></div>
   </div>
 
   <!-- Main Grid Workspace -->
-  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 max-w-[1920px] mx-auto w-full">
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3.5 p-3.5 max-w-[1920px] mx-auto w-full">
 
-    <!-- LEFT COLUMN: Trajectory Bank & Spatial Transformations (4 cols) -->
-    <section class="lg:col-span-3 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-80px)] pr-1">
+    <!-- LEFT COLUMN: Polyphonic Trajectories & Math Bank (3 cols) -->
+    <section class="lg:col-span-3 flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-75px)] pr-1">
 
-      <!-- Shape Selection Card -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
+      <!-- Trajectories Selector Strip (T1..T6) -->
+      <div id="trajectoriesCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
         <div class="flex items-center justify-between mb-2">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Trajectory Bank</h2>
-          <span id="shapeCategory" class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50">Geometric</span>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Trajectories
+          </h2>
+          <span id="activeTrajectoryBadge" class="text-[10px] font-mono text-accent-themed font-semibold">Trajectory 1</span>
         </div>
 
-        <select id="shapeSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-2 text-xs font-medium text-slate-100 mb-2 focus:border-cyan-400">
-          <!-- Injected via JS -->
-        </select>
+        <!-- 6 Trajectory Tabs (T1..T6) -->
+        <div id="trajectoryTabsContainer" class="grid grid-cols-3 gap-1.5 mb-2">
+          <!-- Trajectory buttons injected dynamically via JS -->
+        </div>
 
-        <p id="shapeDesc" class="text-[11px] text-slate-400 leading-relaxed mb-3 bg-[#0e1320] p-2 rounded-lg border border-[#1a2133]">
-          Continuous circular or elliptic perimeter orbit, evoking spatial enclosure.
-        </p>
-
-        <!-- Dynamic Shape-Specific Parameters -->
-        <div class="border-t border-[#1f273d] pt-3">
-          <h3 class="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center justify-between">
-            <span>Shape Parameters</span>
-            <span class="text-[10px] text-slate-500 font-normal">Parametric Formula</span>
-          </h3>
-          <div id="shapeParamsContainer" class="flex flex-col gap-3">
-            <!-- Dynamic parameter sliders rendered here -->
+        <!-- Selected Trajectory Controls (Active / Sync From / Mute / Solo) -->
+        <div class="flex items-center justify-between bg-card-themed p-1.5 rounded-lg border border-themed text-xs gap-1.5">
+          <label class="flex items-center gap-1.5 cursor-pointer text-slate-300 font-medium text-[11px] shrink-0">
+            <input type="checkbox" id="trajectoryActiveToggle" checked class="rounded accent-emerald-500">
+            <span>Active</span>
+          </label>
+          <div class="flex items-center gap-1">
+            <label for="trajectorySyncFromSelect" class="text-[10px] text-slate-400 font-medium shrink-0">Sync From:</label>
+            <select id="trajectorySyncFromSelect" class="bg-input-themed border border-themed rounded text-[10px] px-1 py-0.5 text-slate-200 focus:border-emerald-400 cursor-pointer">
+              <option value="" disabled selected>Select...</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="trajectoryMuteBtn" class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500">
+              Mute
+            </button>
+            <button id="trajectorySoloBtn" class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-800 text-slate-300 border border-slate-700 hover:border-slate-500">
+              Solo
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Spatial Transform & Scaling Card -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Spatial Transformation</h2>
+      <!-- Trajectory Bank Card -->
+      <div class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Trajectory Bank</h2>
+          <span id="shapeCategory" class="text-[9px] uppercase font-semibold px-2 py-0.5 rounded bg-card-themed text-accent-themed border border-themed">Geometric</span>
+        </div>
 
-        <div class="space-y-3">
+        <select id="shapeSelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs font-medium text-slate-100 mb-1.5 focus:border-emerald-400">
+          <!-- Injected via JS -->
+        </select>
+
+        <p id="shapeDesc" class="text-[10px] text-slate-400 leading-relaxed mb-2.5 bg-input-themed p-2 rounded border border-themed">
+          Continuous circular or elliptic perimeter orbit.
+        </p>
+
+        <!-- Dynamic Trajectory Parameters -->
+        <div class="border-t border-themed pt-2">
+          <h3 class="text-[10px] font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+            <span>Parameters</span>
+            <span class="text-[9px] text-slate-500 font-normal">Parametric Formula</span>
+          </h3>
+          <div id="shapeParamsContainer" class="flex flex-col gap-2">
+            <!-- Parameter sliders rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Spatial Transformation Card -->
+      <div class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2.5">Spatial Transformation</h2>
+
+        <div class="space-y-2.5">
           <!-- Master Scale -->
           <div class="flex flex-col gap-1">
             <div class="flex justify-between text-xs">
-              <span class="text-slate-400">Master Amplitude</span>
-              <span id="masterScaleVal" class="text-cyan-400 font-mono text-[11px]">90%</span>
+              <span class="text-slate-400">Scale / Radius</span>
+              <span id="masterScaleVal" class="text-accent-themed font-mono text-[11px]">100%</span>
             </div>
-            <input type="range" id="masterScaleSlider" min="0.1" max="1.0" step="0.01" value="0.9" class="w-full">
+            <input type="range" id="masterScaleSlider" min="0.1" max="1.2" step="0.01" value="1.0" class="w-full">
           </div>
 
-          <!-- X & Y Aspect Scale -->
-          <div class="grid grid-cols-2 gap-3">
+          <!-- Width X & Depth Y -->
+          <div class="grid grid-cols-2 gap-2">
             <div class="flex flex-col gap-1">
               <div class="flex justify-between text-xs">
                 <span class="text-slate-400">Width (X)</span>
-                <span id="scaleXVal" class="text-cyan-400 font-mono text-[11px]">100%</span>
+                <span id="scaleXVal" class="text-accent-themed font-mono text-[11px]">100%</span>
               </div>
               <input type="range" id="scaleXSlider" min="0.1" max="1.5" step="0.05" value="1.0" class="w-full">
             </div>
             <div class="flex flex-col gap-1">
               <div class="flex justify-between text-xs">
                 <span class="text-slate-400">Depth (Y)</span>
-                <span id="scaleYVal" class="text-cyan-400 font-mono text-[11px]">100%</span>
+                <span id="scaleYVal" class="text-accent-themed font-mono text-[11px]">100%</span>
               </div>
               <input type="range" id="scaleYSlider" min="0.1" max="1.5" step="0.05" value="1.0" class="w-full">
             </div>
           </div>
 
           <!-- Center Offset (X0, Y0) -->
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-2 gap-2">
             <div class="flex flex-col gap-1">
               <div class="flex justify-between text-xs">
                 <span class="text-slate-400">Center X₀</span>
-                <span id="centerXVal" class="text-cyan-400 font-mono text-[11px]">0.00</span>
+                <span id="centerXVal" class="text-accent-themed font-mono text-[11px]">0.00</span>
               </div>
               <input type="range" id="centerXSlider" min="-1.0" max="1.0" step="0.02" value="0" class="w-full">
             </div>
             <div class="flex flex-col gap-1">
               <div class="flex justify-between text-xs">
                 <span class="text-slate-400">Center Y₀</span>
-                <span id="centerYVal" class="text-cyan-400 font-mono text-[11px]">0.00</span>
+                <span id="centerYVal" class="text-accent-themed font-mono text-[11px]">0.00</span>
               </div>
               <input type="range" id="centerYSlider" min="-1.0" max="1.0" step="0.02" value="0" class="w-full">
             </div>
           </div>
-          <button id="resetCenterBtn" class="w-full py-1 text-[11px] bg-[#161c2c] hover:bg-[#1f273d] text-slate-400 hover:text-slate-200 border border-[#232c42] rounded-lg transition">
+          <button id="resetCenterBtn" class="w-full py-0.5 text-[10px] bg-card-themed hover:opacity-80 text-slate-400 hover:text-slate-200 border border-themed rounded transition">
             Reset Center (0, 0)
           </button>
         </div>
       </div>
 
-      <!-- Direction & Phase Card -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Direction & Phase</h2>
+      <!-- Direction & Proxemic Zone -->
+      <div class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2.5" id="directionSectionHeader">Direction & Proxemic Zone</h2>
 
-        <div class="space-y-3">
+        <div class="space-y-2.5">
           <div class="flex flex-col gap-1">
             <label class="text-xs text-slate-400">Trajectory Direction</label>
-            <select id="directionSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-2 text-xs text-slate-100 focus:border-cyan-400">
-              <option value="cw">Clockwise / Forward (CW)</option>
-              <option value="ccw">Counter-Clockwise / Reverse (CCW)</option>
+            <select id="directionSelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs text-slate-100 focus:border-emerald-400">
+              <option value="cw">Forward (CW)</option>
+              <option value="ccw">Reverse (CCW)</option>
               <option value="pingpong">Ping-Pong / Alternating Bounce</option>
+              <option value="drunk">Drunk Motion</option>
+              <option value="random_stepped">Random</option>
+              <option value="random_smooth">Random with Motion</option>
             </select>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <!-- Dynamic Direction Rate Slider (Drunk & Random Modes) -->
+          <div id="directionRateContainer" class="flex flex-col gap-1 hidden">
+            <div class="flex justify-between text-xs">
+              <span id="directionRateLabel" class="text-slate-400">Drunkenness</span>
+              <span id="directionRateVal" class="text-accent-themed font-mono text-[11px]">1.00x</span>
+            </div>
+            <input type="range" id="directionRateSlider" min="0.1" max="5.0" step="0.05" value="1.0" class="w-full">
+          </div>
+
+          <!-- Proxemic Zone Lock (Pounamu mode) -->
+          <div id="ecologicalLockContainer" class="flex flex-col gap-1">
+            <label class="text-xs text-slate-400 flex items-center justify-between">
+              <span>Proxemic Zone</span>
+            </label>
+            <select id="behavioralLockSelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs text-slate-100 focus:border-emerald-400">
+              <option value="none">Full Field</option>
+              <option value="intimate">Intimate / Gestural Zone (r &lt; 0.25)</option>
+              <option value="personal">Personal / Reachable Zone (0.25 - 0.55)</option>
+              <option value="social">Social / Ensemble Zone (0.55 - 0.85)</option>
+              <option value="arena">Arena / Public Perimeter (r &gt; 0.85)</option>
+              <option value="upper_field">Upper / Forward Field (Y &gt; +0.25)</option>
+              <option value="lower_field">Lower / Deep Field (Y &lt; -0.20)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
             <div class="flex flex-col gap-1">
               <div class="flex justify-between text-xs">
                 <span class="text-slate-400">Phase Offset</span>
-                <span id="phaseOffsetVal" class="text-cyan-400 font-mono text-[11px]">0°</span>
+                <span id="phaseOffsetVal" class="text-accent-themed font-mono text-[11px]">0°</span>
               </div>
               <input type="range" id="phaseOffsetSlider" min="0" max="360" step="5" value="0" class="w-full">
             </div>
             <div class="flex flex-col gap-1">
               <div class="flex justify-between text-xs">
                 <span class="text-slate-400">Start Angle</span>
-                <span id="startAngleVal" class="text-cyan-400 font-mono text-[11px]">0°</span>
+                <span id="startAngleVal" class="text-accent-themed font-mono text-[11px]">0°</span>
               </div>
               <input type="range" id="startAngleSlider" min="0" max="360" step="5" value="0" class="w-full">
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Vectorial / Under Construction Card (Pounamu Feature) -->
+      <div id="vectorialSectionCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">UNDER CONSTRUCTION</h2>
+          <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">Vectorial</span>
+        </div>
+
+        <div id="vectorialControlBar" class="bg-card-themed p-2 rounded-xl border border-themed flex flex-col gap-2 text-xs">
+          <div class="flex flex-col gap-1.5">
+            <span class="font-bold uppercase tracking-wider text-[10px] text-accent-themed">Vectorial Mode:</span>
+            <select id="wipeModeSelect" class="w-full bg-input-themed border border-themed rounded px-1.5 py-1 text-xs text-slate-200">
+              <option value="restoration">Wipe: Restoration (Normal)</option>
+              <option value="shift">Wipe: Shift (Phase Bump)</option>
+              <option value="prolongation">Wipe: Prolongation (Perimeter)</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-1">
+            <button id="triggerWipeBtn" class="px-2 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs shadow transition text-center">
+              🚀 Proximate Wipe
+            </button>
+            <button id="triggerBreachBtn" class="px-2 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded text-xs shadow transition text-center">
+              👁 Distal Breach
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biloba Personality Signature Card (Annette Vande Gorne) -->
+      <div id="bilobaSectionCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm hidden">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">L'Espace du Son</h2>
+          <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">Biloba</span>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- 16 Figures d'Espace -->
+          <div class="flex flex-col gap-1">
+            <label class="text-slate-400 font-medium">Figure d'Espace (16 Figures)</label>
+            <select id="bilobaFigureSelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs text-slate-100 focus:border-amber-400">
+              <option value="rotation">3. Rotation (Tournoiement)</option>
+              <option value="fixe">1. Point / Fixe</option>
+              <option value="translation">2. Translation</option>
+              <option value="elargissement">4. Élargissement (Morph)</option>
+              <option value="contournement">5. Contournement</option>
+              <option value="zigzag">6. Zig-zag</option>
+              <option value="echappement">7. Échappement (Flight)</option>
+              <option value="balancement">8. Balancement (Pendulum)</option>
+              <option value="spirale">9. Spirale</option>
+              <option value="vague">10. Vague / Ondulation</option>
+              <option value="tressage">11. Tressage (Braid)</option>
+              <option value="rebondissement">12. Rebondissement</option>
+              <option value="dispersion">13. Dispersion</option>
+              <option value="polyphonie">14. Polyphonie Spatiale</option>
+              <option value="combinee">15. Trajectoire Combinée</option>
+              <option value="enveloppement">16. Enveloppement</option>
+            </select>
+          </div>
+
+          <!-- Caliber Width (Calibre) -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Caliber Width (Calibre)</span>
+              <span id="bilobaCaliberVal" class="text-accent-themed font-mono text-[11px]">35%</span>
+            </div>
+            <input type="range" id="bilobaCaliberSlider" min="0" max="100" step="1" value="35" class="w-full">
+          </div>
+
+          <!-- Directivity Mode -->
+          <div class="flex flex-col gap-1">
+            <label class="text-slate-400 font-medium">Directivity / Diffusion</label>
+            <select id="bilobaDirectivitySelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs text-slate-100 focus:border-amber-400">
+              <option value="bilobed" selected>Ginkgo Bilobé (Dual-Lobe Fan)</option>
+              <option value="projector">Projecteur Focalisé (Directional Beam)</option>
+              <option value="radiator">Radiateur (Omnidirectional Halo)</option>
+            </select>
+          </div>
+
+          <!-- Lobe Angle -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Ginkgo Lobe Angle</span>
+              <span id="bilobaLobeAngleVal" class="text-accent-themed font-mono text-[11px]">70°</span>
+            </div>
+            <input type="range" id="bilobaLobeAngleSlider" min="15" max="180" step="5" value="70" class="w-full">
+          </div>
+        </div>
+      </div>
+
+      <!-- Kornblume Personality Signature Card (Jens Blauert) -->
+      <div id="kornblumeSectionCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm hidden">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400">Spatial Hearing</h2>
+          <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-blue-500/20 text-cyan-300 border border-blue-500/30 font-semibold">Kornblume</span>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- Interaural Coherence (k vs 1-k) -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Interaural Coherence (k)</span>
+              <span id="kornblumeCoherenceVal" class="text-accent-themed font-mono text-[11px]">0.85</span>
+            </div>
+            <input type="range" id="kornblumeCoherenceSlider" min="0" max="100" step="1" value="85" class="w-full">
+            <div class="flex justify-between text-[9px] text-slate-500">
+              <span>Diffuse (1-k)</span>
+              <span>Point Source (k=1)</span>
+            </div>
+          </div>
+
+          <!-- Blauert Directional Bands -->
+          <div class="flex flex-col gap-1">
+            <label class="text-slate-400 font-medium">Blauert Directional Bands</label>
+            <select id="kornblumeBandsSelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs text-slate-100 focus:border-cyan-400">
+              <option value="front_4k" selected>4 kHz Band (Front Presence)</option>
+              <option value="rear_1k">1 kHz Band (Rear Pull)</option>
+              <option value="overhead_8k">8 kHz Band (Overhead / Elevation)</option>
+              <option value="multiband">Tri-Band Spectral Split (T1..T6)</option>
+              <option value="neutral">Neutral / Transparent</option>
+            </select>
+          </div>
+
+          <!-- Precedence Effect & Haas Delay -->
+          <div class="bg-card-themed p-2 rounded-lg border border-themed flex flex-col gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="kornblumePrecedenceToggle" checked class="rounded bg-input-themed border-themed text-cyan-500 focus:ring-0">
+              <span class="font-medium text-slate-200">Precedence Effect (Haas Split)</span>
+            </label>
+
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-[11px]">
+                <span class="text-slate-400">Haas Lag Delay</span>
+                <span id="kornblumeHaasDelayVal" class="text-accent-themed font-mono text-[11px]">15 ms</span>
+              </div>
+              <input type="range" id="kornblumeHaasDelaySlider" min="1" max="40" step="1" value="15" class="w-full">
+            </div>
+
+            <!-- Franssen Transient Decoupling -->
+            <label class="flex items-center gap-2 cursor-pointer pt-1 border-t border-themed">
+              <input type="checkbox" id="kornblumeFranssenToggle" class="rounded bg-input-themed border-themed text-cyan-500 focus:ring-0">
+              <span class="text-slate-300 text-[11px]">Franssen Transient Decoupling</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calcite Personality Signature Card (Natasha Barrett) -->
+      <div id="calciteSectionCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm hidden">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-sky-400">Ambisonic Cleavage</h2>
+          <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">Calcite</span>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- Birefringent Ray Separation (To vs Te) -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Ray Split (To &harr; Te)</span>
+              <span id="calciteRaySeparationVal" class="text-accent-themed font-mono text-[11px]">35%</span>
+            </div>
+            <input type="range" id="calciteRaySeparationSlider" min="0" max="100" step="1" value="35" class="w-full">
+          </div>
+
+          <!-- Optic Axis Angle -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Optic Axis Angle</span>
+              <span id="calciteOpticAxisVal" class="text-accent-themed font-mono text-[11px]">45°</span>
+            </div>
+            <input type="range" id="calciteOpticAxisSlider" min="0" max="360" step="5" value="45" class="w-full">
+          </div>
+
+          <!-- Cleavage Symmetry Mode -->
+          <div class="flex flex-col gap-1">
+            <label class="text-slate-400 font-medium">Cleavage Geometry</label>
+            <select id="calciteCleavageSelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs text-slate-100 focus:border-sky-400">
+              <option value="rhombohedral" selected>Rhombohedral Cleavage (6 Facets)</option>
+              <option value="trigonal">Trigonal Prism (3-Fold Symmetry)</option>
+              <option value="twin">Polysynthetic Twin Reflection</option>
+            </select>
+          </div>
+
+          <!-- 3D HOA Elevation -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">3D HOA Elevation</span>
+              <span id="calciteElevationVal" class="text-accent-themed font-mono text-[11px]">0°</span>
+            </div>
+            <input type="range" id="calciteElevationSlider" min="-90" max="90" step="5" value="0" class="w-full">
+          </div>
+        </div>
+      </div>
+
+      <!-- Ipê-amarelo Personality Signature Card (Daniel L. Barreiro) -->
+      <div id="ipeAmareloSectionCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm hidden">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400">Spectral Diffusion</h2>
+          <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-yellow-300 border border-yellow-500/30 font-semibold">Ipê-amarelo</span>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- Forest Stratum -->
+          <div class="flex flex-col gap-1">
+            <label class="text-slate-400 font-medium">Forest Stratum</label>
+            <select id="ipeStratumSelect" class="w-full bg-card-themed border border-themed rounded-lg p-1.5 text-xs text-slate-100 focus:border-amber-400">
+              <option value="canopy" selected>Canopy Bloom (High Frequencies)</option>
+              <option value="understory">Trunk / Understory (Mid Frequencies)</option>
+              <option value="ground">Terra Roxa / Roots (Low Frequencies)</option>
+              <option value="full">Full Biome (Canopy + Ground)</option>
+            </select>
+          </div>
+
+          <!-- LUT Scramble Rate -->
+          <div class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">LUT Scramble Rate</span>
+              <span id="ipeLutRateVal" class="text-accent-themed font-mono text-[11px]">1.20 Hz</span>
+            </div>
+            <input type="range" id="ipeLutRateSlider" min="0" max="5.0" step="0.1" value="1.2" class="w-full">
+          </div>
+
+          <!-- Kinetic Boundary Collision -->
+          <label class="flex items-center gap-2 cursor-pointer py-0.5">
+            <input type="checkbox" id="ipeKineticCollisionToggle" checked class="rounded bg-input-themed border-themed text-yellow-500 focus:ring-0">
+            <span class="text-slate-300">Kinetic Perimeter Collision</span>
+          </label>
+
+          <!-- Maresia Surge Wave Button -->
+          <button id="ipeMaresiaBtn" class="w-full py-1.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold rounded text-xs shadow transition text-center flex items-center justify-center gap-1.5">
+            🌊 Maresia Wave Surge
+          </button>
+        </div>
+      </div>
     </section>
 
-    <!-- CENTER COLUMN: Visual Spatial Stage & Speaker Field (6 cols) -->
-    <section class="lg:col-span-6 flex flex-col gap-3">
+    <!-- CENTER COLUMN: Visual Spatial Stage & Acoustic Field (6 cols) -->
+    <section class="lg:col-span-6 flex flex-col gap-2.5">
 
       <!-- Visualizer Card -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 flex-1 flex flex-col shadow-lg relative">
+      <div class="bg-panel-themed border border-themed rounded-xl p-3 flex-1 flex flex-col shadow-lg relative">
 
         <!-- Visualizer Top Overlay -->
-        <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
           <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Surround Acoustic Field</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_var(--accent-primary)]"></span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Acoustic Field</span>
           </div>
 
           <!-- Visual Options Toggles -->
-          <div class="flex items-center gap-3 text-xs text-slate-400">
+          <div class="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
             <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
-              <input type="checkbox" id="showTrajectoryCheck" checked class="rounded accent-cyan-500"> Path
+              <input type="checkbox" id="showTrajectoryCheck" checked class="rounded accent-emerald-500"> Path
             </label>
             <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
-              <input type="checkbox" id="showTrailCheck" checked class="rounded accent-cyan-500"> Trail
+              <input type="checkbox" id="showTrailCheck" checked class="rounded accent-emerald-500"> Trail
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200" id="proxemicsCheckLabel">
+              <input type="checkbox" id="showProxemicsCheck" checked class="rounded accent-emerald-500"> Proxemics
             </label>
             <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
-              <input type="checkbox" id="showMetersCheck" checked class="rounded accent-cyan-500"> Meters
+              <input type="checkbox" id="showAccumulatorCheck" checked class="rounded accent-emerald-500"> Heatmap
             </label>
             <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
-              <input type="checkbox" id="showGridCheck" checked class="rounded accent-cyan-500"> Grid
+              <input type="checkbox" id="showMetersCheck" checked class="rounded accent-emerald-500"> Meters
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200">
+              <input type="checkbox" id="showGridCheck" checked class="rounded accent-emerald-500"> Grid
             </label>
           </div>
         </div>
 
-        <!-- Canvas Container -->
-        <div class="relative flex-1 w-full min-h-[480px] bg-[#070a10] rounded-xl overflow-hidden border border-[#1a2133] flex items-center justify-center">
-          <canvas id="pannerCanvas" class="w-full h-full cursor-crosshair"></canvas>
+        <!-- Strict 1:1 Aspect Ratio Canvas Container -->
+        <div class="relative flex-1 w-full min-h-[460px] bg-input-themed rounded-xl overflow-hidden border border-themed flex items-center justify-center">
+          <canvas id="pannerCanvas" class="w-full h-full cursor-crosshair block"></canvas>
 
-          <!-- Floating Helper Badge -->
-          <div class="absolute bottom-3 left-3 bg-[#0d121df0] backdrop-blur-md px-2.5 py-1 rounded-md border border-[#232c42] text-[10px] text-slate-400 pointer-events-none">
-            Click & drag to reposition Center (X₀, Y₀)
+          <!-- Space-Form Score Export Floating Buttons -->
+          <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5 bg-panel-themed/90 backdrop-blur-md px-2 py-1 rounded border border-themed text-[10px]">
+            <span class="text-slate-400">Memory:</span>
+            <select id="decayModeSelect" class="bg-transparent text-[10px] text-accent-themed font-medium focus:outline-none">
+              <option value="fast" selected>Fast (5s)</option>
+              <option value="medium">Med (15s)</option>
+              <option value="slow">Slow (60s)</option>
+              <option value="infinite">Infinite (Score)</option>
+            </select>
+            <button id="clearAccumulatorBtn" title="Clear Heatmap" class="px-1.5 py-0.5 bg-card-themed hover:text-red-400 rounded text-[9px] border border-themed">
+              Clear
+            </button>
+            <button id="exportScoreBtn" title="Export Heatmap PNG" class="px-1.5 py-0.5 bg-card-themed hover:text-emerald-400 rounded text-[9px] border border-themed font-semibold">
+              PNG ⬇
+            </button>
+          </div>
+
+          <!-- Floating Drag Helper -->
+          <div class="absolute bottom-2.5 left-2.5 bg-panel-themed/85 backdrop-blur-md px-2 py-0.5 rounded border border-themed text-[9px] text-slate-400 pointer-events-none">
+            Click & drag to reposition Trajectory Center (X₀, Y₀)
           </div>
         </div>
 
-        <!-- Real-time Surround Panner Parameter Readout Bar -->
-        <div class="mt-3 grid grid-cols-4 sm:grid-cols-8 gap-2 bg-[#0c101a] p-2.5 rounded-xl border border-[#1e2638]">
+        <!-- Live Parameters Readout Bar -->
+        <div class="mt-2 grid grid-cols-4 sm:grid-cols-8 gap-1.5 bg-card-themed p-2 rounded-xl border border-themed">
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">X-Axis</span>
-            <span id="monX" class="font-mono text-xs font-bold text-cyan-400">0.000</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Traj X</span>
+            <span id="monX" class="font-mono text-xs font-bold text-accent-themed">0.000</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Y-Axis</span>
-            <span id="monY" class="font-mono text-xs font-bold text-cyan-400">0.000</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Traj Y</span>
+            <span id="monY" class="font-mono text-xs font-bold text-accent-themed">0.000</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Rotation</span>
-            <span id="monRot" class="font-mono text-xs font-bold text-teal-400">0.0°</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Spin/Rot</span>
+            <span id="monRot" class="font-mono text-xs font-bold text-emerald-400">0.0°</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Focus</span>
-            <span id="monFocus" class="font-mono text-xs font-bold text-emerald-400">100%</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Focus</span>
+            <span id="monFocus" class="font-mono text-xs font-bold text-emerald-300">50%</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Center</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Center</span>
             <span id="monCenter" class="font-mono text-xs font-bold text-amber-400">50%</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Smooth</span>
-            <span id="monSmooth" class="font-mono text-xs font-bold text-pink-400">15%</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Smooth</span>
+            <span id="monSmooth" class="font-mono text-xs font-bold text-pink-400">0%</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Velocity</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Velocity</span>
             <span id="monVelocity" class="font-mono text-xs font-medium text-slate-300">0.00 u/s</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-semibold">Frequency</span>
-            <span id="monFreq" class="font-mono text-xs font-medium text-slate-300">0.500 Hz</span>
+            <span class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Zone</span>
+            <span id="monZone" class="font-mono text-[10px] font-bold text-accent-themed truncate max-w-[75px]">Personal</span>
           </div>
         </div>
 
       </div>
 
-      <!-- Spectromorphological Notes Box -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-3 text-xs text-slate-400 flex items-start gap-3">
-        <div class="text-cyan-400 text-base font-bold mt-0.5">ℹ</div>
-        <div class="flex-1">
-          <p class="font-semibold text-slate-300 mb-0.5">Spectromorphological Gesture Context</p>
-          <p class="text-[11px] leading-relaxed text-slate-400" id="presetDesc">
-            Spatial panning trajectories express energy profiles: centrifugal vortexes project outward to the perimeter, harmonic Lissajous ribbons weave through quad space, and staccato polygon vertices articulate leaping point-source locations.
-          </p>
+      <!-- Web MIDI Output Modal Trigger Button (Replaces Context Box to maximize real estate) -->
+      <div class="bg-panel-themed border border-themed rounded-xl p-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div id="midiMainLed" class="w-3 h-3 rounded-full bg-slate-600 transition-all"></div>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Web MIDI Output Streamer</h3>
+            <p class="text-[10px] text-slate-400" id="midiStatusSummary">Status: Disconnected</p>
+          </div>
         </div>
+        <button id="openMidiModalBtn" class="px-3 py-1.5 bg-card-themed hover:border-accent-themed border border-themed rounded-lg text-xs font-bold text-accent-themed shadow transition flex items-center gap-1.5">
+          <span>⚙️ Configure Web MIDI</span>
+        </button>
       </div>
+
     </section>
 
-    <!-- RIGHT COLUMN: Ableton Surround Panner Controls & Web MIDI (3 cols) -->
-    <section class="lg:col-span-3 flex flex-col gap-4 overflow-y-auto max-h-[calc(100vh-80px)] pr-1">
+    <!-- RIGHT COLUMN: Clock, Snapshots, Surround Panner, Spectral (3 cols) -->
+    <section class="lg:col-span-3 flex flex-col gap-3 overflow-y-auto max-h-[calc(100vh-75px)] pr-1">
 
-      <!-- Surround Panner Target Parameters Card -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Surround Panner Controls</h2>
-          <span class="text-[10px] text-emerald-400 font-mono">Live Target</span>
+      <!-- 1. TEMPORAL CLOCK & RATE (TOP OF COLUMN 3) -->
+      <div class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Temporal Clock & Rate</h2>
+
+        <!-- Rate Mode Radio Switch -->
+        <div class="flex items-center gap-1 p-0.5 bg-card-themed rounded-lg border border-themed mb-2 text-xs">
+          <label class="flex-1 text-center py-1 rounded cursor-pointer transition font-medium has-[:checked]:bg-emerald-600 has-[:checked]:text-white text-slate-400 text-[11px]">
+            <input type="radio" name="rateMode" id="rateModeSync" value="sync" checked class="hidden"> Beat Synced
+          </label>
+          <label class="flex-1 text-center py-1 rounded cursor-pointer transition font-medium has-[:checked]:bg-emerald-600 has-[:checked]:text-white text-slate-400 text-[11px]">
+            <input type="radio" name="rateMode" id="rateModeFree" value="free" class="hidden"> Free Rate
+          </label>
         </div>
 
-        <div class="space-y-4">
+        <!-- Sync Controls Panel -->
+        <div id="syncControls" class="space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <label class="text-xs text-slate-400">Master BPM</label>
+            <input type="number" id="bpmInput" min="20" max="300" value="120" class="w-16 px-1.5 py-0.5 rounded text-xs text-right font-mono no-spin bg-input-themed border border-themed text-slate-100">
+          </div>
+          <input type="range" id="bpmSlider" min="40" max="220" step="1" value="120" class="w-full">
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs text-slate-400">Musical Division (Selected Trajectory)</label>
+            <select id="noteDivSelect" class="w-full bg-card-themed border border-themed rounded p-1.5 text-xs text-slate-100 focus:border-emerald-400">
+              <!-- Injected via JS with shorter divisions at top and X.XXX thousandths precision -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Free Controls Panel (Tri-Mode: Time / LFO / VCO) -->
+        <div id="freeControls" class="space-y-2 hidden">
+          <!-- Tri-mode selector -->
+          <div class="flex items-center gap-1 bg-input-themed p-0.5 rounded border border-themed text-[10px]">
+            <button id="freeSubTimeBtn" class="flex-1 py-0.5 rounded font-bold transition-all bg-card-themed text-slate-300">
+              Time
+            </button>
+            <button id="freeSubLfoBtn" class="flex-1 py-0.5 rounded font-bold transition-all bg-emerald-700 text-white">
+              LFO
+            </button>
+            <button id="freeSubVcoBtn" class="flex-1 py-0.5 rounded font-bold transition-all bg-card-themed text-slate-300">
+              VCO
+            </button>
+          </div>
+
+          <!-- Time Sub-Panel -->
+          <div id="freeSubTimePanel" class="space-y-1.5 hidden">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">Period Duration</span>
+              <div class="flex items-center gap-1">
+                <input type="number" id="freeTimeInput" min="0.001" max="300" step="0.001" value="2.000" class="w-20 px-1 py-0.5 rounded text-xs text-right font-mono no-spin bg-input-themed border border-themed text-accent-themed">
+                <span class="text-[10px] text-slate-400">s</span>
+                <span id="freeTimeVal" class="hidden">2.000s</span>
+              </div>
+            </div>
+            <input type="range" id="freeTimeSlider" min="0.001" max="300" step="0.001" value="2.0" class="w-full">
+          </div>
+
+          <!-- LFO Sub-Panel -->
+          <div id="freeSubLfoPanel" class="space-y-1.5">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">LFO Frequency</span>
+              <div class="flex items-center gap-1">
+                <input type="number" id="freeLfoInput" min="0.001" max="2.0" step="0.001" value="0.500" class="w-20 px-1 py-0.5 rounded text-xs text-right font-mono no-spin bg-input-themed border border-themed text-accent-themed">
+                <span class="text-[10px] text-slate-400">Hz</span>
+                <span id="freeLfoVal" class="hidden">0.500 Hz</span>
+              </div>
+            </div>
+            <input type="range" id="freeLfoSlider" min="0.001" max="2.0" step="0.001" value="0.5" class="w-full">
+          </div>
+
+          <!-- VCO Sub-Panel -->
+          <div id="freeSubVcoPanel" class="space-y-1.5 hidden">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-400">VCO Frequency</span>
+              <div class="flex items-center gap-1">
+                <input type="number" id="freeVcoInput" min="1.0" max="600.0" step="0.1" value="30.0" class="w-20 px-1 py-0.5 rounded text-xs text-right font-mono no-spin bg-input-themed border border-themed text-accent-themed">
+                <span class="text-[10px] text-slate-400">Hz</span>
+                <span id="freeVcoVal" class="hidden">30.0 Hz</span>
+              </div>
+            </div>
+            <input type="range" id="freeVcoSlider" min="1.0" max="600.0" step="1.0" value="30.0" class="w-full">
+          </div>
+        </div>
+
+        <!-- Sync From Trajectory (Pounamu Feature) -->
+        <div id="clockSyncContainer" class="pt-2 mt-2 border-t border-themed flex items-center justify-between gap-1 text-xs">
+          <span class="text-[10px] text-slate-400 font-medium shrink-0">Sync From:</span>
+          <div id="clockSyncRadioGroup" class="flex items-center gap-1.5 flex-wrap justify-end">
+            <!-- Dynamically populated via JS: T1..T6 radio buttons excluding active -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. SNAPSHOTS (3x3 NUMPAD MATRIX & SHAPE MORPHER) -->
+      <div id="snapshotsCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Snapshots</h2>
+          <span id="morphStatusBadge" class="text-[9px] font-mono text-slate-400">Idle</span>
+        </div>
+
+        <p class="text-[9px] text-slate-400 mb-2 leading-relaxed">
+          Click a pad for options (Recall, Morph, Store, Delete). Press Numpad 1–9 to Morph.
+        </p>
+
+        <!-- 3x3 Snapshot Numpad Grid -->
+        <div id="snapshotGrid3x3" class="grid grid-cols-3 gap-1.5 mb-2.5 max-w-[220px] mx-auto w-full">
+          <!-- 9 pads rendered via JS: 7 8 9, 4 5 6, 1 2 3 -->
+        </div>
+
+        <!-- Morph Curve & Duration Controls -->
+        <div class="space-y-2 border-t border-themed pt-2">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] text-slate-400">Interpolation Curve</label>
+            <select id="morphCurveSelect" class="w-full bg-card-themed border border-themed rounded p-1 text-xs text-slate-200">
+              <option value="scurve">S-Curve</option>
+              <option value="linear">Linear</option>
+              <option value="logarithmic">Logarithmic</option>
+              <option value="exponential">Exponential</option>
+            </select>
+          </div>
+
+          <!-- Dynamic Duration: Seconds if Free, Musical Division if Synced -->
+          <div id="morphDurationSecContainer" class="flex flex-col gap-1">
+            <div class="flex justify-between text-xs">
+              <span class="text-slate-400">Morph Duration (Free)</span>
+              <span id="morphDurationVal" class="text-accent-themed font-mono text-[11px]">5.0s</span>
+            </div>
+            <input type="range" id="morphDurationSlider" min="0.1" max="300" step="0.5" value="5" class="w-full">
+          </div>
+
+          <div id="morphDurationSyncContainer" class="flex flex-col gap-1 hidden">
+            <label class="text-[10px] text-slate-400">Morph Duration (Synced Division)</label>
+            <select id="morphDivisionSelect" class="w-full bg-card-themed border border-themed rounded p-1 text-xs text-slate-200">
+              <!-- Injected dynamically: 1/16 to 128/1 -->
+            </select>
+          </div>
+
+          <!-- Morph Progress Indicator -->
+          <div class="w-full bg-input-themed h-1.5 rounded-full overflow-hidden border border-themed mt-1">
+            <div id="morphProgressBar" class="h-full w-0 transition-all duration-75 bg-emerald-500"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SURROUND PANNER TARGET PARAMETERS -->
+      <div class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Manual Surround Panner Controls</h2>
+        </div>
+
+        <div class="space-y-2.5">
           <!-- Rotation -->
           <div class="flex flex-col gap-1">
             <div class="flex justify-between text-xs">
               <span class="text-slate-300 font-medium">Rotation</span>
-              <span id="rotationVal" class="text-teal-400 font-mono text-[11px]">0°</span>
+              <span id="rotationVal" class="text-emerald-400 font-mono text-[11px]">0°</span>
             </div>
             <input type="range" id="rotationSlider" min="-180" max="180" step="1" value="0" class="w-full">
           </div>
 
-          <!-- Auto-Rotate Spin -->
+          <!-- Spin (Auto-Rotate Spin) -->
           <div class="flex flex-col gap-1">
             <div class="flex justify-between text-xs">
-              <span class="text-slate-400">Auto-Rotate Spin</span>
-              <span id="autoRotateVal" class="text-teal-400 font-mono text-[11px]">0°/s</span>
+              <span class="text-slate-400">Spin</span>
+              <span id="autoRotateVal" class="text-emerald-400 font-mono text-[11px]">0°/s</span>
             </div>
             <input type="range" id="autoRotateSlider" min="-90" max="90" step="2" value="0" class="w-full">
           </div>
 
-          <!-- Focus -->
+          <!-- Focus (Default 50%) -->
           <div class="flex flex-col gap-1">
             <div class="flex justify-between text-xs">
-              <span class="text-slate-300 font-medium">Focus (Dispersion)</span>
-              <span id="focusVal" class="text-emerald-400 font-mono text-[11px]">100%</span>
+              <span class="text-slate-300 font-medium">Focus</span>
+              <span id="focusVal" class="text-emerald-300 font-mono text-[11px]">50%</span>
             </div>
-            <input type="range" id="focusSlider" min="0" max="100" step="1" value="100" class="w-full">
-            <span class="text-[10px] text-slate-500">0% = Diffuse ambient / 100% = Pinpoint</span>
+            <input type="range" id="focusSlider" min="0" max="100" step="1" value="50" class="w-full">
           </div>
 
-          <!-- Center -->
+          <!-- Center (Default 50%) -->
           <div class="flex flex-col gap-1">
             <div class="flex justify-between text-xs">
-              <span class="text-slate-300 font-medium">Center Bleed</span>
+              <span class="text-slate-300 font-medium">Center</span>
               <span id="centerVal" class="text-amber-400 font-mono text-[11px]">50%</span>
             </div>
             <input type="range" id="centerSlider" min="0" max="100" step="1" value="50" class="w-full">
           </div>
 
-          <!-- Smooth -->
+          <!-- Smooth (Default 0%) -->
           <div class="flex flex-col gap-1">
             <div class="flex justify-between text-xs">
-              <span class="text-slate-300 font-medium">Smooth (Lag Filter)</span>
-              <span id="smoothVal" class="text-pink-400 font-mono text-[11px]">15%</span>
+              <span class="text-slate-300 font-medium">Smooth</span>
+              <span id="smoothVal" class="text-pink-400 font-mono text-[11px]">0%</span>
             </div>
-            <input type="range" id="smoothSlider" min="0" max="100" step="1" value="15" class="w-full">
-            <span class="text-[10px] text-slate-500">Exponential moving average damping</span>
+            <input type="range" id="smoothSlider" min="0" max="100" step="1" value="0" class="w-full">
+            <span class="text-[9px] text-slate-500">0% = Instantaneous accurate time-based movement</span>
           </div>
         </div>
       </div>
 
-      <!-- Temporal Clock & Sync Card -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Temporal Clock & Rate</h2>
+      <!-- 4. SPECTRAL COUPLING & FILTER CC (POUNAMU FEATURE) -->
+      <div id="spectralCouplingCard" class="bg-panel-themed border border-themed rounded-xl p-3 shadow-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Spectral Coupling</h2>
+        </div>
 
-        <!-- Rate Mode Radio Switch -->
-        <div class="flex items-center gap-2 p-1 bg-[#161c2c] rounded-lg border border-[#232c42] mb-3 text-xs">
-          <label class="flex-1 text-center py-1 rounded cursor-pointer transition font-medium has-[:checked]:bg-cyan-500 has-[:checked]:text-slate-950 text-slate-400">
-            <input type="radio" name="rateMode" id="rateModeSync" value="sync" checked class="hidden"> Beat Synced
+        <div class="space-y-1.5 text-xs text-slate-400">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="specFocusCheck" class="rounded accent-emerald-500">
+            <span class="text-[11px]">Y → Focus (High: Pinpoint / Low: Diffuse)</span>
           </label>
-          <label class="flex-1 text-center py-1 rounded cursor-pointer transition font-medium has-[:checked]:bg-cyan-500 has-[:checked]:text-slate-950 text-slate-400">
-            <input type="radio" name="rateMode" id="rateModeFree" value="free" class="hidden"> Free (Hz)
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="specCenterCheck" class="rounded accent-emerald-500">
+            <span class="text-[11px]">Y → Center (Low: Grounded Sub Core)</span>
           </label>
-        </div>
-
-        <!-- Sync Controls Panel -->
-        <div id="syncControls" class="space-y-3">
-          <div class="flex items-center justify-between gap-2">
-            <label class="text-xs text-slate-400">BPM</label>
-            <div class="flex items-center gap-2">
-              <input type="number" id="bpmInput" min="20" max="300" value="120" class="w-16 px-2 py-1 rounded text-xs text-right font-mono">
-            </div>
-          </div>
-          <input type="range" id="bpmSlider" min="40" max="220" step="1" value="120" class="w-full">
-
-          <div class="flex flex-col gap-1">
-            <label class="text-xs text-slate-400">Musical Division</label>
-            <select id="noteDivSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-2 text-xs text-slate-100 focus:border-cyan-400">
-              <!-- Injected via JS -->
-            </select>
-          </div>
-        </div>
-
-        <!-- Free Controls Panel -->
-        <div id="freeControls" class="space-y-3 hidden">
-          <div class="flex items-center justify-between gap-2">
-            <label class="text-xs text-slate-400">Frequency (Hz)</label>
-            <input type="number" id="freeHzInput" min="0.01" max="20" step="0.05" value="0.5" class="w-20 px-2 py-1 rounded text-xs text-right font-mono">
-          </div>
-          <input type="range" id="freeHzSlider" min="0.02" max="5.0" step="0.02" value="0.5" class="w-full">
-        </div>
-      </div>
-
-      <!-- Web MIDI Controller Card -->
-      <div class="bg-[#111622] border border-[#1f273d] rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <div id="midiLed" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-colors"></div>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">Web MIDI Output</h2>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="midiToggle" class="sr-only peer">
-            <div class="w-9 h-5 bg-[#1e2638] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="specGravSmoothCheck" class="rounded accent-emerald-500">
+            <span class="text-[11px]">Gravitational Inertia (Y Descent → Smooth)</span>
           </label>
-        </div>
-
-        <div class="space-y-3">
-          <div class="flex flex-col gap-1">
-            <label class="text-[11px] text-slate-400">MIDI Destination Port</label>
-            <select id="midiPortSelect" class="w-full bg-[#161c2c] border border-[#232c42] rounded-lg p-1.5 text-xs text-slate-100">
-              <option value="">Searching for ports...</option>
-            </select>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <label class="text-[11px] text-slate-400">MIDI Channel</label>
-            <select id="midiChannelSelect" class="bg-[#161c2c] border border-[#232c42] rounded-lg px-2 py-1 text-xs">
-              <option value="1">Channel 1</option>
-              <option value="2">Channel 2</option>
-              <option value="3">Channel 3</option>
-              <option value="4">Channel 4</option>
-              <option value="5">Channel 5</option>
-              <option value="6">Channel 6</option>
-              <option value="7">Channel 7</option>
-              <option value="8">Channel 8</option>
-              <option value="9">Channel 9</option>
-              <option value="10">Channel 10</option>
-              <option value="11">Channel 11</option>
-              <option value="12">Channel 12</option>
-              <option value="13">Channel 13</option>
-              <option value="14">Channel 14</option>
-              <option value="15">Channel 15</option>
-              <option value="16">Channel 16</option>
-            </select>
-          </div>
-
-          <!-- MIDI CC Mapping Table -->
-          <div class="border-t border-[#1f273d] pt-2">
-            <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-2">Live CC Assignments</span>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
-                <span class="text-slate-400 text-[11px]">X-Axis:</span>
-                <input type="number" id="ccInputX" min="0" max="127" value="20" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-cyan-400">
-              </div>
-              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
-                <span class="text-slate-400 text-[11px]">Y-Axis:</span>
-                <input type="number" id="ccInputY" min="0" max="127" value="21" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-cyan-400">
-              </div>
-              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
-                <span class="text-slate-400 text-[11px]">Rotation:</span>
-                <input type="number" id="ccInputRot" min="0" max="127" value="22" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-teal-400">
-              </div>
-              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
-                <span class="text-slate-400 text-[11px]">Focus:</span>
-                <input type="number" id="ccInputFocus" min="0" max="127" value="23" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-emerald-400">
-              </div>
-              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
-                <span class="text-slate-400 text-[11px]">Center:</span>
-                <input type="number" id="ccInputCenter" min="0" max="127" value="24" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-amber-400">
-              </div>
-              <div class="flex items-center justify-between bg-[#161c2c] p-1.5 rounded border border-[#232c42]">
-                <span class="text-slate-400 text-[11px]">Smooth:</span>
-                <input type="number" id="ccInputSmooth" min="0" max="127" value="25" class="w-10 px-1 py-0.5 text-right font-mono rounded bg-[#0e1320] text-pink-400">
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
     </section>
 
   </main>
+
+  <!-- =========================================================
+       IN-WINDOW POP-UP MODAL: WEB MIDI OUTPUT CONFIGURATION
+       ========================================================= -->
+  <div id="midiModal" class="modal-overlay hidden">
+    <div class="modal-content p-5">
+      <div class="flex items-center justify-between border-b border-themed pb-3 mb-4">
+        <div class="flex items-center gap-2">
+          <div id="midiModalLed" class="w-3 h-3 rounded-full bg-slate-600"></div>
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-100">Web MIDI Output Configuration</h2>
+        </div>
+        <button id="closeMidiModalBtn" class="text-slate-400 hover:text-white text-lg font-bold px-2 py-0.5 rounded">
+          ✕
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <!-- Master Enable Toggle -->
+        <div class="flex items-center justify-between bg-card-themed p-2.5 rounded-lg border border-themed">
+          <div>
+            <span class="font-bold text-slate-200 block">Enable MIDI Stream</span>
+            <span class="text-[10px] text-slate-400">Sends real-time CCs to Ableton Surround Panners</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="midiToggle" class="sr-only peer">
+            <div class="w-9 h-5 bg-input-themed peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+          </label>
+        </div>
+
+        <!-- MIDI Destination Port -->
+        <div class="flex flex-col gap-1">
+          <label class="text-slate-400 font-medium">Destination MIDI Port</label>
+          <select id="midiPortSelect" class="w-full bg-card-themed border border-themed rounded-lg p-2 text-xs text-slate-100">
+            <option value="">Searching for MIDI ports...</option>
+          </select>
+        </div>
+
+        <!-- Routing Mode -->
+        <div class="flex flex-col gap-1">
+          <label class="text-slate-400 font-medium">Trajectory Multi-Routing Mode</label>
+          <select id="midiRoutingModeSelect" class="w-full bg-card-themed border border-themed rounded-lg p-2 text-xs text-slate-100">
+            <option value="channels">Per-Trajectory Channels (T1..T6 on Ch 1..6, CC 20-27)</option>
+            <option value="stacked_ccs">Multi-CC Stacking (Ch 1, CC 20..67)</option>
+          </select>
+        </div>
+
+        <!-- Base Channel -->
+        <div class="flex items-center justify-between">
+          <label class="text-slate-400 font-medium">Base MIDI Channel</label>
+          <select id="midiChannelSelect" class="bg-card-themed border border-themed rounded-lg px-2.5 py-1 text-xs text-slate-200">
+            <option value="1">Channel 1</option>
+            <option value="2">Channel 2</option>
+            <option value="3">Channel 3</option>
+            <option value="4">Channel 4</option>
+            <option value="5">Channel 5</option>
+            <option value="6">Channel 6</option>
+          </select>
+        </div>
+
+        <!-- MIDI CC Mapping Reference Table with T1..T6 Tabs -->
+        <div class="border-t border-themed pt-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Live Parameter CC Map</span>
+            <span id="midiRoutingSummaryLabel" class="text-[10px] text-accent-themed font-mono">T1 (Ch 1)</span>
+          </div>
+
+          <!-- Trajectory Sub-tabs (T1..T6) -->
+          <div id="midiTrajectoryTabs" class="grid grid-cols-6 gap-1 mb-2">
+            <button type="button" data-traj="0" class="midi-tab-btn px-1.5 py-1 text-[10px] font-bold rounded bg-emerald-700 text-white border border-emerald-500 transition">T1</button>
+            <button type="button" data-traj="1" class="midi-tab-btn px-1.5 py-1 text-[10px] font-bold rounded bg-card-themed border border-themed text-slate-400 hover:border-accent-themed transition">T2</button>
+            <button type="button" data-traj="2" class="midi-tab-btn px-1.5 py-1 text-[10px] font-bold rounded bg-card-themed border border-themed text-slate-400 hover:border-accent-themed transition">T3</button>
+            <button type="button" data-traj="3" class="midi-tab-btn px-1.5 py-1 text-[10px] font-bold rounded bg-card-themed border border-themed text-slate-400 hover:border-accent-themed transition">T4</button>
+            <button type="button" data-traj="4" class="midi-tab-btn px-1.5 py-1 text-[10px] font-bold rounded bg-card-themed border border-themed text-slate-400 hover:border-accent-themed transition">T5</button>
+            <button type="button" data-traj="5" class="midi-tab-btn px-1.5 py-1 text-[10px] font-bold rounded bg-card-themed border border-themed text-slate-400 hover:border-accent-themed transition">T6</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">X-Axis:</span>
+              <span id="ccMapX" class="text-accent-themed font-bold">CC 20</span>
+            </div>
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">Y-Axis:</span>
+              <span id="ccMapY" class="text-accent-themed font-bold">CC 21</span>
+            </div>
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">Rotation:</span>
+              <span id="ccMapRot" class="text-emerald-400 font-bold">CC 22</span>
+            </div>
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">Focus:</span>
+              <span id="ccMapFocus" class="text-emerald-300 font-bold">CC 23</span>
+            </div>
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">Center:</span>
+              <span id="ccMapCenter" class="text-amber-400 font-bold">CC 24</span>
+            </div>
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">Smooth:</span>
+              <span id="ccMapSmooth" class="text-pink-400 font-bold">CC 25</span>
+            </div>
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">Filter Cutoff:</span>
+              <span id="ccMapFilter" class="text-accent-themed font-bold">CC 26</span>
+            </div>
+            <div class="bg-card-themed p-1.5 rounded border border-themed flex justify-between">
+              <span class="text-slate-400">Track Volume:</span>
+              <span id="ccMapVol" class="text-blue-400 font-bold">CC 27</span>
+            </div>
+          </div>
+          <p class="text-[9px] text-slate-500 mt-2 italic">
+            Track Volume starts at 127 and lowers automatically during proximate wipes and distal breaches.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Snapshot Pad Context Menu Floating Popup -->
+  <div id="snapshotContextMenu" class="snapshot-context-menu hidden">
+    <button id="ctxRecallBtn" class="snapshot-context-btn">
+      <span>▶</span> Recall
+    </button>
+    <button id="ctxMorphBtn" class="snapshot-context-btn">
+      <span>🌊</span> Morph
+    </button>
+    <button id="ctxStoreBtn" class="snapshot-context-btn">
+      <span>💾</span> Store
+    </button>
+    <button id="ctxDeleteBtn" class="snapshot-context-btn text-red-400 hover:text-red-300">
+      <span>🗑️</span> Delete
+    </button>
+  </div>
 
   <script type="module" src="src/main.js"></script>
 </body>

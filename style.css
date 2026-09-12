@@ -1,49 +1,363 @@
-/* Spatiomorphology - Studio Dark Theme */
-:root {
-  --bg-main: #0a0d14;
-  --bg-panel: #111622;
-  --bg-card: #161c2c;
-  --bg-input: #0e1320;
-  --border-subtle: #232c42;
-  --border-focus: #38bdf8;
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --accent-cyan: #38bdf8;
-  --accent-teal: #2dd4bf;
-  --accent-emerald: #34d399;
-  --accent-amber: #fbbf24;
-  --accent-rose: #f43f5e;
+/* Spatiomorph - Dual Personality & Global Brightness Tier System */
+
+/* =========================================================
+   1. PERSONALITY ACCENTS
+   ========================================================= */
+
+/* Pounamu (New Zealand Greenstone) */
+body.personality-pounamu {
+  --accent-primary: #52b788;
+  --accent-secondary: #74c69d;
+  --accent-highlight: #b7efc5;
+  --accent-glow: rgba(82, 183, 136, 0.45);
+  --header-grad: linear-gradient(135deg, #1b4332 0%, #2d6a4f 50%, #52b788 100%);
 }
 
+/* Plaifolia (Vanilla Plant) */
+body.personality-plaifolia {
+  --accent-primary: #f59e0b;
+  --accent-secondary: #84a98c;
+  --accent-highlight: #fef3c7;
+  --accent-glow: rgba(245, 158, 11, 0.45);
+  --header-grad: linear-gradient(135deg, #78350f 0%, #b45309 50%, #f59e0b 100%);
+}
+
+/* Biloba (Ginkgo Biloba & Berries) */
+body.personality-biloba {
+  --accent-primary: #e5a93c;
+  --accent-secondary: #e07a5f;
+  --accent-highlight: #fef08a;
+  --accent-glow: rgba(229, 169, 60, 0.45);
+  --header-grad: linear-gradient(135deg, #5c2b09 0%, #b45309 50%, #e5a93c 100%);
+}
+
+/* Kornblume (German Cornflower) */
+body.personality-kornblume {
+  --accent-primary: #2563eb;
+  --accent-secondary: #38bdf8;
+  --accent-highlight: #bfdbfe;
+  --accent-glow: rgba(37, 99, 235, 0.45);
+  --header-grad: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #2563eb 100%);
+}
+
+/* Calcite (Iceland Spar) */
+body.personality-calcite {
+  --accent-primary: #38bdf8;
+  --accent-secondary: #94a3b8;
+  --accent-highlight: #f8fafc;
+  --accent-glow: rgba(56, 189, 248, 0.45);
+  --header-grad: linear-gradient(135deg, #090d16 0%, #1e293b 50%, #38bdf8 100%);
+}
+
+/* Ipê-amarelo (Golden Trumpet Tree) */
+body.personality-ipe_amarelo {
+  --accent-primary: #fbbf24;
+  --accent-secondary: #15803d;
+  --accent-highlight: #fef08a;
+  --accent-glow: rgba(251, 191, 36, 0.45);
+  --header-grad: linear-gradient(135deg, #18120c 0%, #78350f 45%, #fbbf24 100%);
+}
+
+/* =========================================================
+   2. GLOBAL BRIGHTNESS TIERS
+   ========================================================= */
+
+/* Tier 1: Dark (Default) */
+body.brightness-dark {
+  --bg-main: #060e0a;
+  --bg-panel: #0c1811;
+  --bg-card: #122218;
+  --bg-input: #08140e;
+  --border-subtle: #1c3527;
+  --border-focus: var(--accent-primary);
+  --text-main: #edf6f0;
+  --text-muted: #8ca395;
+}
+
+body.personality-plaifolia.brightness-dark {
+  --bg-main: #14100c;
+  --bg-panel: #1e1813;
+  --bg-card: #292019;
+  --bg-input: #18120d;
+  --border-subtle: #3d3025;
+  --border-focus: var(--accent-primary);
+  --text-main: #fef9e7;
+  --text-muted: #c4b5a5;
+}
+
+body.personality-biloba.brightness-dark {
+  --bg-main: #140d06;
+  --bg-panel: #1d1309;
+  --bg-card: #271a0d;
+  --bg-input: #170f07;
+  --border-subtle: #3d2914;
+  --border-focus: var(--accent-primary);
+  --text-main: #fef8ee;
+  --text-muted: #b89f82;
+}
+
+body.personality-kornblume.brightness-dark {
+  --bg-main: #060b18;
+  --bg-panel: #0d152c;
+  --bg-card: #131d3d;
+  --bg-input: #080e20;
+  --border-subtle: #1c2b57;
+  --border-focus: var(--accent-primary);
+  --text-main: #f0f4fc;
+  --text-muted: #829bc9;
+}
+
+body.personality-calcite.brightness-dark {
+  --bg-main: #060e14;
+  --bg-panel: #0c1720;
+  --bg-card: #12212d;
+  --bg-input: #081219;
+  --border-subtle: #193142;
+  --border-focus: var(--accent-primary);
+  --text-main: #f0f8ff;
+  --text-muted: #7ca4be;
+}
+
+body.personality-ipe_amarelo.brightness-dark {
+  --bg-main: #140f06;
+  --bg-panel: #1e170a;
+  --bg-card: #291f0e;
+  --bg-input: #181207;
+  --border-subtle: #403016;
+  --border-focus: var(--accent-primary);
+  --text-main: #fefced;
+  --text-muted: #bfa979;
+}
+
+/* Tier 2: Medium Dark (Default theme) */
+body.brightness-med-dark {
+  --bg-main: #182c21;
+  --bg-panel: #20372a;
+  --bg-card: #284233;
+  --bg-input: #1a3024;
+  --border-subtle: #365743;
+  --border-focus: var(--accent-primary);
+  --text-main: #edf6f0;
+  --text-muted: #a6c3b0;
+}
+
+body.personality-plaifolia.brightness-med-dark {
+  --bg-main: #2f271f;
+  --bg-panel: #3a3127;
+  --bg-card: #453b30;
+  --bg-input: #322921;
+  --border-subtle: #5b4d3e;
+  --border-focus: var(--accent-primary);
+  --text-main: #fef9e7;
+  --text-muted: #d7c9bc;
+}
+
+body.personality-biloba.brightness-med-dark {
+  --bg-main: #2a1f14;
+  --bg-panel: #37291a;
+  --bg-card: #453321;
+  --bg-input: #2e2115;
+  --border-subtle: #5a432b;
+  --border-focus: var(--accent-primary);
+  --text-main: #fef8ee;
+  --text-muted: #d0b89d;
+}
+
+body.personality-kornblume.brightness-med-dark {
+  --bg-main: #141f3b;
+  --bg-panel: #1a294d;
+  --bg-card: #223460;
+  --bg-input: #162240;
+  --border-subtle: #304780;
+  --border-focus: var(--accent-primary);
+  --text-main: #f0f4fc;
+  --text-muted: #9bb2db;
+}
+
+body.personality-calcite.brightness-med-dark {
+  --bg-main: #14232e;
+  --bg-panel: #1b2e3c;
+  --bg-card: #233b4d;
+  --bg-input: #162733;
+  --border-subtle: #305067;
+  --border-focus: var(--accent-primary);
+  --text-main: #f0f8ff;
+  --text-muted: #96bbd4;
+}
+
+body.personality-ipe_amarelo.brightness-med-dark {
+  --bg-main: #2b2210;
+  --bg-panel: #392c15;
+  --bg-card: #47381b;
+  --bg-input: #2e2411;
+  --border-subtle: #5f4a24;
+  --border-focus: var(--accent-primary);
+  --text-main: #fefced;
+  --text-muted: #d5c398;
+}
+
+/* Tier 3: Medium Light (True 50% Luminance Midpoint) */
+body.brightness-med-light {
+  --bg-main: #62766b;
+  --bg-panel: #6d8277;
+  --bg-card: #778d82;
+  --bg-input: #576b60;
+  --border-subtle: #4a5c52;
+  --border-focus: var(--accent-primary);
+  --text-main: #f5fbf7;
+  --text-muted: #d0ded6;
+}
+
+body.personality-plaifolia.brightness-med-light {
+  --bg-main: #736b63;
+  --bg-panel: #7e766e;
+  --bg-card: #8a827a;
+  --bg-input: #686058;
+  --border-subtle: #575048;
+  --border-focus: var(--accent-primary);
+  --text-main: #fdfbf8;
+  --text-muted: #ded7cf;
+}
+
+body.personality-biloba.brightness-med-light {
+  --bg-main: #736150;
+  --bg-panel: #7f6c5b;
+  --bg-card: #8b7766;
+  --bg-input: #685747;
+  --border-subtle: #57483a;
+  --border-focus: var(--accent-primary);
+  --text-main: #fefbf8;
+  --text-muted: #ded1c4;
+}
+
+body.personality-kornblume.brightness-med-light {
+  --bg-main: #5d6d91;
+  --bg-panel: #6879a0;
+  --bg-card: #7385ad;
+  --bg-input: #526182;
+  --border-subtle: #455270;
+  --border-focus: var(--accent-primary);
+  --text-main: #f8faff;
+  --text-muted: #ccd6ea;
+}
+
+body.personality-calcite.brightness-med-light {
+  --bg-main: #5a7385;
+  --bg-panel: #658093;
+  --bg-card: #708ea1;
+  --bg-input: #4f6676;
+  --border-subtle: #425665;
+  --border-focus: var(--accent-primary);
+  --text-main: #f7fbff;
+  --text-muted: #c8dbe6;
+}
+
+body.personality-ipe_amarelo.brightness-med-light {
+  --bg-main: #736448;
+  --bg-panel: #807052;
+  --bg-card: #8c7c5c;
+  --bg-input: #67593f;
+  --border-subtle: #574a33;
+  --border-focus: var(--accent-primary);
+  --text-main: #fefdf7;
+  --text-muted: #ded3bb;
+}
+
+/* Tier 4: Light */
+body.brightness-light {
+  --bg-main: #cbdad1;
+  --bg-panel: #dae6de;
+  --bg-card: #e5eee8;
+  --bg-input: #f0f6f2;
+  --border-subtle: #b0c6b9;
+  --border-focus: var(--accent-primary);
+  --text-main: #0c1811;
+  --text-muted: #41594b;
+}
+
+body.personality-plaifolia.brightness-light {
+  --bg-main: #ded5cb;
+  --bg-panel: #eae2d9;
+  --bg-card: #f2ece4;
+  --bg-input: #f9f5f0;
+  --border-subtle: #c7b8a7;
+  --border-focus: var(--accent-primary);
+  --text-main: #1c150f;
+  --text-muted: #5e4f41;
+}
+
+body.personality-biloba.brightness-light {
+  --bg-main: #ded3c5;
+  --bg-panel: #eae0d4;
+  --bg-card: #f2e9de;
+  --bg-input: #f9f3ec;
+  --border-subtle: #c7b5a1;
+  --border-focus: var(--accent-primary);
+  --text-main: #1c140c;
+  --text-muted: #5e4c3b;
+}
+
+body.personality-kornblume.brightness-light {
+  --bg-main: #cdd5e8;
+  --bg-panel: #dae1f2;
+  --bg-card: #e5ebf8;
+  --bg-input: #f0f4fc;
+  --border-subtle: #b1bfdf;
+  --border-focus: var(--accent-primary);
+  --text-main: #081126;
+  --text-muted: #3b4e78;
+}
+
+body.personality-calcite.brightness-light {
+  --bg-main: #c9dbe6;
+  --bg-panel: #d7e6f0;
+  --bg-card: #e2eef7;
+  --bg-input: #eff6fb;
+  --border-subtle: #adc8db;
+  --border-focus: var(--accent-primary);
+  --text-main: #091720;
+  --text-muted: #3a5468;
+}
+
+body.personality-ipe_amarelo.brightness-light {
+  --bg-main: #dfd7c2;
+  --bg-panel: #eae3cf;
+  --bg-card: #f2ebda;
+  --bg-input: #f9f5e8;
+  --border-subtle: #c8bda0;
+  --border-focus: var(--accent-primary);
+  --text-main: #1d1607;
+  --text-muted: #5e5033;
+}
+
+/* Base Body Styles */
 body {
   background-color: var(--bg-main);
   color: var(--text-main);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+.bg-panel-themed { background-color: var(--bg-panel); }
+.bg-card-themed { background-color: var(--bg-card); }
+.bg-input-themed { background-color: var(--bg-input); }
+.border-themed { border-color: var(--border-subtle); }
+.text-accent-themed { color: var(--accent-primary); }
 
 /* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-panel);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-focus); }
 
-/* Sliders */
+/* Range Sliders */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  background: #1e293b;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: 3px;
   outline: none;
   transition: background 0.15s ease;
@@ -55,15 +369,15 @@ input[type="range"]::-webkit-slider-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--accent-cyan);
+  background: var(--accent-primary);
   cursor: pointer;
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 8px var(--accent-glow);
   transition: transform 0.1s ease, background-color 0.15s ease;
 }
 
 input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.25);
-  background: #7dd3fc;
+  background: var(--accent-highlight);
 }
 
 /* Numeric & select inputs */
@@ -79,9 +393,168 @@ select:focus, input[type="number"]:focus, input[type="text"]:focus {
   outline: none;
 }
 
+/* Theme-Aware Dropdown Options (eliminates white-on-white text) */
+select option, select optgroup {
+  background-color: var(--bg-panel);
+  color: var(--text-main);
+}
+
+select optgroup {
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+
+/* Hide number input spinner arrows */
+input[type="number"].no-spin::-webkit-inner-spin-button,
+input[type="number"].no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].no-spin {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* 3x3 Snapshot Numpad Grid */
+.snapshot-pad-3x3 {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-family: monospace;
+  font-weight: 800;
+  font-size: 13px;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  user-select: none;
+}
+
+.snapshot-pad-3x3:hover {
+  border-color: var(--border-focus);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.snapshot-pad-3x3.has-data {
+  border-color: var(--accent-secondary);
+  color: var(--text-main);
+  background-color: var(--bg-input);
+}
+
+.snapshot-pad-3x3.active-pad {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px var(--accent-glow);
+  color: var(--accent-primary);
+  background-color: var(--bg-panel);
+}
+
+.snapshot-pad-3x3.morphing-target {
+  border-color: #f43f5e;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.7);
+  animation: pad-pulse 0.75s infinite alternate;
+}
+
+@keyframes pad-pulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.06); }
+}
+
+/* Snapshot Context Menu Modal */
+.snapshot-context-menu {
+  position: absolute;
+  z-index: 50;
+  border-radius: 8px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  min-width: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.snapshot-context-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  color: var(--text-main);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-align: left;
+}
+
+.snapshot-context-btn:hover {
+  background-color: var(--bg-card);
+  color: var(--accent-primary);
+}
+
+/* Trajectory Tab Buttons */
+.trajectory-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trajectory-tab-btn:hover {
+  border-color: var(--border-focus);
+  color: var(--text-main);
+}
+
+.trajectory-tab-btn.active-tab {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-panel);
+  color: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Modal Popup Window */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal-content {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  max-width: 520px;
+  width: 100%;
+  overflow: hidden;
+}
+
 /* Pulsing LED for MIDI */
 @keyframes midi-pulse {
-  0% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px #34d399; }
+  0% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px var(--accent-primary); }
   100% { opacity: 0.3; transform: scale(1); box-shadow: none; }
 }
 

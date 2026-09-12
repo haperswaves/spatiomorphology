@@ -22,7 +22,7 @@ def main():
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         url = f"http://localhost:{PORT}/index.html"
         print("=" * 60)
-        print(" Spatiomorphology - Spatial Panning Generator")
+        print(" Spatiomorph - Electroacoustic Trajectory Suite")
         print(f" Serving at: {url}")
         print(" Press Ctrl+C to stop.")
         print("=" * 60)

@@ -1,23 +1,39 @@
 /**
- * Spatiomorphology - Canvas Visualizer & Spatial Monitor
- * Renders high-DPI coordinate space, trajectory paths, motion trails,
- * virtual speakers with gain halos, and sound puck with Focus dispersion.
+ * Spatiomorph - Canvas Visualizer & Multi-Trajectory Spatial Monitor
+ * Renders strict 1:1 high-DPI coordinate space, proxemic zones, trajectory pucks & trails,
+ * vectorial wipe surges, and the space-form heatmap accumulator.
  */
 
+import { PROXEMIC_ZONES } from '../engine/proxemics.js';
+
 export class CanvasRenderer {
-  constructor(canvas) {
+  constructor(canvas, spaceFormAccumulator = null) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+    this.accumulator = spaceFormAccumulator;
 
-    // Trail history buffer
-    this.trailPoints = [];
+    // Multi-trajectory trail history buffers (one per trajectory: 0..5)
     this.maxTrailLength = 50;
+    this.trails = Array.from({ length: 6 }, () => []);
+
+    // Visual options
     this.showTrail = true;
     this.showTrajectory = true;
     this.showGrid = true;
     this.showMeters = true;
+    this.showProxemics = true;
+    this.showAccumulator = true;
 
-    // Canvas sizing
+    this.personality = 'pounamu'; // 'pounamu' | 'plaifolia' | 'biloba' | 'kornblume' | 'calcite' | 'ipe_amarelo'
+    this.brightnessTheme = 'med-dark'; // 'dark' | 'med-dark' | 'med-light' | 'light'
+
+    // Personality Engines
+    this.figuresEngine = null;
+    this.blauertEngine = null;
+    this.birefringenceEngine = null;
+    this.spectralDiffusionEngine = null;
+
+    // Sizing
     this.width = 0;
     this.height = 0;
     this.centerX = 0;
@@ -27,24 +43,47 @@ export class CanvasRenderer {
     this.resize();
   }
 
-  resize() {
-    const rect = this.canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    this.width = rect.width || 600;
-    this.height = rect.height || 600;
+  getAuraColor() {
+    switch (this.personality) {
+      case 'plaifolia': return '245, 158, 11';
+      case 'biloba': return '229, 169, 60';
+      case 'kornblume': return '58, 134, 255';
+      case 'calcite': return '72, 202, 228';
+      case 'ipe_amarelo': return '255, 190, 11';
+      case 'pounamu':
+      default:
+        return '82, 183, 136';
+    }
+  }
 
-    this.canvas.width = Math.floor(this.width * dpr);
-    this.canvas.height = Math.floor(this.height * dpr);
+  resize() {
+    const parent = this.canvas.parentElement;
+    const rect = parent ? parent.getBoundingClientRect() : this.canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    const w = Math.floor(rect.width || 500);
+    const h = Math.floor(rect.height || 500);
+    this.width = w;
+    this.height = h;
+
+    this.canvas.width = Math.floor(w * dpr);
+    this.canvas.height = Math.floor(h * dpr);
+    this.canvas.style.width = `${w}px`;
+    this.canvas.style.height = `${h}px`;
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    this.centerX = this.width / 2;
-    this.centerY = this.height / 2;
-    // Leave margin for speaker badges
-    this.radiusPx = Math.min(this.width, this.height) * 0.42;
+    this.centerX = w / 2;
+    this.centerY = h / 2;
+    // Exactly 90% of the internal display size (diameter = 0.90 * minDim, radius = 0.45 * minDim)
+    const minDim = Math.min(w, h);
+    this.radiusPx = (minDim / 2) * 0.90;
+
+    if (this.accumulator) {
+      this.accumulator.resize(w, h, this.radiusPx);
+    }
   }
 
   toScreen(normX, normY) {
-    // In audio/panning: +Y is Front (Up), +X is Right
     return {
       x: this.centerX + normX * this.radiusPx,
       y: this.centerY - normY * this.radiusPx
@@ -58,93 +97,177 @@ export class CanvasRenderer {
     };
   }
 
-  render(engineState, sampledPath, speakerGains) {
+  render(polyStates, sampledPathsByTrajectory, speakerGains, wipeState = null, selectedTrajectoryIdx = 0) {
+    // Dynamic resize check in case flex layout resolved after initial DOM load
+    const parent = this.canvas.parentElement;
+    if (parent) {
+      const pRect = parent.getBoundingClientRect();
+      const pw = Math.floor(pRect.width);
+      const ph = Math.floor(pRect.height);
+      if (pw > 0 && ph > 0 && (Math.abs(pw - this.width) > 2 || Math.abs(ph - this.height) > 2)) {
+        this.resize();
+      }
+    }
+
     const ctx = this.ctx;
     ctx.clearRect(0, 0, this.width, this.height);
 
-    // 1. Coordinate Grid & Distance Rings
+    // 1. Proxemic Zones or Personality Stratum / Median Bands
+    if (this.showProxemics && this.personality === 'pounamu') {
+      this.drawProxemicZones();
+    } else if (this.personality === 'ipe_amarelo') {
+      this.drawIpeAmareloStrata();
+    } else if (this.personality === 'kornblume') {
+      this.drawBlauertMedianBands();
+    } else if (this.personality === 'calcite') {
+      this.drawCalciteCleavageGrid();
+    }
+
+    // 2. Coordinate Grid & Distance Rings
     if (this.showGrid) {
       this.drawGrid();
     }
 
-    // 2. Trajectory Path
-    if (this.showTrajectory && sampledPath && sampledPath.length > 1) {
-      this.drawTrajectoryPath(sampledPath);
+    // 3. Space-Form Heatmap Accumulator Layer
+    if (this.showAccumulator && this.accumulator) {
+      this.accumulator.renderTo(ctx);
     }
 
-    // 3. Motion Trail
+    // 4. Trajectory Paths (Dotted previews)
+    if (this.showTrajectory && sampledPathsByTrajectory) {
+      for (const t of polyStates) {
+        if (!t.active) continue;
+        const path = sampledPathsByTrajectory[t.index];
+        if (path && path.length > 1) {
+          const isSelected = t.index === selectedTrajectoryIdx;
+          this.drawTrajectoryPath(path, t.palette, isSelected);
+        }
+      }
+    }
+
+    // 5. Multi-Trajectory Motion Trails
     if (this.showTrail) {
-      this.updateAndDrawTrail(engineState.x, engineState.y);
+      for (const t of polyStates) {
+        if (!t.active) {
+          this.trails[t.index] = [];
+          continue;
+        }
+        this.updateAndDrawTrail(t.index, t.state.x, t.state.y, t.palette, t.audible);
+      }
     }
 
-    // 4. Virtual Speakers & Radiation Halos
+    // 6. Virtual Speakers & Radiation Halos
     if (speakerGains) {
       this.drawSpeakers(speakerGains);
     }
 
-    // 5. Raw Target Marker (if smoothed lag is notable)
-    const rawDist = Math.hypot(engineState.x - engineState.rawX, engineState.y - engineState.rawY);
-    if (rawDist > 0.02 && engineState.smooth > 5) {
-      this.drawRawLagIndicator(engineState);
+    // 7. Vectorial Wipe Surge Indicator
+    if (wipeState && wipeState.wipeActive) {
+      this.drawVectorialWipe(wipeState);
     }
 
-    // 6. Sound Puck & Focus Dispersion Aura
-    this.drawSoundPuck(engineState);
+    // 8. Personality Specialized Overlays
+    if (this.personality === 'biloba' && this.figuresEngine) {
+      this.drawBilobaDirectivityLobes(polyStates[selectedTrajectoryIdx]);
+    } else if (this.personality === 'kornblume' && this.blauertEngine) {
+      this.drawKornblumeGhosts(polyStates);
+    } else if (this.personality === 'calcite' && this.birefringenceEngine) {
+      this.drawCalciteBirefringentRays(polyStates);
+    } else if (this.personality === 'ipe_amarelo' && this.spectralDiffusionEngine) {
+      this.drawIpeAmareloMaresiaSurge();
+    }
+
+    // 9. Trajectory Pucks (T1..T6)
+    for (const t of polyStates) {
+      if (!t.active) continue;
+      const isSelected = t.index === selectedTrajectoryIdx;
+      this.drawTrajectoryPuck(t, isSelected);
+    }
+  }
+
+  drawProxemicZones() {
+    const ctx = this.ctx;
+    ctx.save();
+
+    for (const zone of PROXEMIC_ZONES) {
+      const rPx = zone.maxR * this.radiusPx;
+      const isLight = this.brightnessTheme === 'light' || this.brightnessTheme === 'med-light';
+      const fillColor = isLight ? 'rgba(45, 106, 79, 0.06)' : zone.colorPounamu;
+      const borderColor = isLight ? 'rgba(45, 106, 79, 0.35)' : zone.borderPounamu;
+
+      ctx.beginPath();
+      ctx.arc(this.centerX, this.centerY, rPx, 0, Math.PI * 2);
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 5]);
+      ctx.stroke();
+
+      // Zone label
+      ctx.fillStyle = borderColor;
+      ctx.font = '9px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.setLineDash([]);
+      const labelAngle = -Math.PI * 0.75;
+      const lx = this.centerX + Math.cos(labelAngle) * (rPx - 6);
+      const ly = this.centerY + Math.sin(labelAngle) * (rPx - 6);
+      ctx.fillText(zone.name.split('/')[0].trim(), lx, ly);
+    }
+
+    ctx.restore();
   }
 
   drawGrid() {
     const ctx = this.ctx;
     ctx.save();
 
-    // Concentric polar rings
+    const isLight = this.brightnessTheme === 'light' || this.brightnessTheme === 'med-light';
+    const axisColor = isLight ? 'rgba(70, 90, 80, 0.25)' : 'rgba(45, 106, 79, 0.35)';
+    const labelColor = isLight ? 'rgba(50, 70, 60, 0.75)' : 'rgba(116, 198, 157, 0.65)';
+
+    // Polar Rings
     const rings = [0.25, 0.5, 0.75, 1.0];
     for (const r of rings) {
       ctx.beginPath();
       ctx.arc(this.centerX, this.centerY, r * this.radiusPx, 0, Math.PI * 2);
-      ctx.strokeStyle = r === 1.0 ? 'rgba(80, 100, 130, 0.35)' : 'rgba(50, 70, 95, 0.2)';
+      ctx.strokeStyle = r === 1.0 ? axisColor : (isLight ? 'rgba(70, 90, 80, 0.15)' : 'rgba(45, 106, 79, 0.2)');
       ctx.lineWidth = r === 1.0 ? 1.5 : 1;
       ctx.setLineDash(r === 1.0 ? [] : [4, 6]);
       ctx.stroke();
-
-      // Distance labels
-      if (r === 1.0 || r === 0.5) {
-        ctx.fillStyle = 'rgba(120, 145, 175, 0.5)';
-        ctx.font = '10px Inter, system-ui, sans-serif';
-        ctx.fillText(`${(r * 100).toFixed(0)}%`, this.centerX + 4, this.centerY - r * this.radiusPx + 12);
-      }
     }
 
-    // Cartesian Axes
+    // Axes
     ctx.setLineDash([2, 4]);
-    ctx.strokeStyle = 'rgba(70, 90, 120, 0.3)';
+    ctx.strokeStyle = axisColor;
     ctx.lineWidth = 1;
 
-    // X Axis (L <-> R)
+    // X Axis
     ctx.beginPath();
-    ctx.moveTo(this.centerX - this.radiusPx * 1.1, this.centerY);
-    ctx.lineTo(this.centerX + this.radiusPx * 1.1, this.centerY);
+    ctx.moveTo(this.centerX - this.radiusPx * 1.08, this.centerY);
+    ctx.lineTo(this.centerX + this.radiusPx * 1.08, this.centerY);
     ctx.stroke();
 
-    // Y Axis (Rear <-> Front)
+    // Y Axis
     ctx.beginPath();
-    ctx.moveTo(this.centerX, this.centerY - this.radiusPx * 1.1);
-    ctx.lineTo(this.centerX, this.centerY + this.radiusPx * 1.1);
+    ctx.moveTo(this.centerX, this.centerY - this.radiusPx * 1.08);
+    ctx.lineTo(this.centerX, this.centerY + this.radiusPx * 1.08);
     ctx.stroke();
 
     // Cardinal Labels
-    ctx.fillStyle = 'rgba(130, 160, 195, 0.65)';
-    ctx.font = '11px Inter, system-ui, sans-serif';
+    ctx.fillStyle = labelColor;
+    ctx.font = '10px Inter, system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('FRONT (+Y)', this.centerX, this.centerY - this.radiusPx * 1.06);
-    ctx.fillText('REAR (-Y)', this.centerX, this.centerY + this.radiusPx * 1.12);
+    ctx.fillText('FRONT (+Y)', this.centerX, this.centerY - this.radiusPx * 1.05);
+    ctx.fillText('REAR (-Y)', this.centerX, this.centerY + this.radiusPx * 1.11);
     ctx.textAlign = 'left';
-    ctx.fillText('RIGHT (+X)', this.centerX + this.radiusPx * 1.06, this.centerY + 4);
+    ctx.fillText('RIGHT (+X)', this.centerX + this.radiusPx * 1.04, this.centerY + 3);
     ctx.textAlign = 'right';
-    ctx.fillText('LEFT (-X)', this.centerX - this.radiusPx * 1.06, this.centerY + 4);
+    ctx.fillText('LEFT (-X)', this.centerX - this.radiusPx * 1.04, this.centerY + 3);
 
-    // Center cross
+    // Center Crosshair
     ctx.setLineDash([]);
-    ctx.strokeStyle = 'rgba(100, 210, 255, 0.4)';
+    ctx.strokeStyle = isLight ? 'rgba(45, 106, 79, 0.6)' : 'rgba(82, 183, 136, 0.5)';
     ctx.beginPath();
     ctx.moveTo(this.centerX - 6, this.centerY);
     ctx.lineTo(this.centerX + 6, this.centerY);
@@ -155,53 +278,63 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  drawTrajectoryPath(sampledPath) {
+  drawTrajectoryPath(sampledPath, palette, isSelected) {
+    if (!sampledPath || sampledPath.length < 2) return;
     const ctx = this.ctx;
     ctx.save();
     ctx.beginPath();
 
     const startPt = this.toScreen(sampledPath[0].x, sampledPath[0].y);
+    if (!Number.isFinite(startPt.x) || !Number.isFinite(startPt.y)) {
+      ctx.restore();
+      return;
+    }
     ctx.moveTo(startPt.x, startPt.y);
 
     for (let i = 1; i < sampledPath.length; i++) {
       const pt = this.toScreen(sampledPath[i].x, sampledPath[i].y);
-      ctx.lineTo(pt.x, pt.y);
+      if (Number.isFinite(pt.x) && Number.isFinite(pt.y)) {
+        ctx.lineTo(pt.x, pt.y);
+      }
     }
 
-    ctx.strokeStyle = 'rgba(45, 212, 191, 0.45)'; // Soft teal
-    ctx.lineWidth = 2.0;
-    ctx.setLineDash([6, 5]);
-    ctx.stroke();
+    const endPt = sampledPath[sampledPath.length - 1];
+    const dist = Math.hypot(endPt.x - sampledPath[0].x, endPt.y - sampledPath[0].y);
+    if (dist < 0.08 && ctx.closePath) {
+      ctx.closePath();
+    }
 
-    // Start point indicator
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.arc(startPt.x, startPt.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(52, 211, 153, 0.9)'; // Emerald
-    ctx.fill();
+    ctx.strokeStyle = isSelected ? (palette.secondary || '#52b788') : 'rgba(100, 116, 139, 0.25)';
+    ctx.lineWidth = isSelected ? 2.0 : 1.0;
+    ctx.setLineDash(isSelected ? [5, 4] : [2, 6]);
+    ctx.stroke();
 
     ctx.restore();
   }
 
-  updateAndDrawTrail(currX, currY) {
-    this.trailPoints.push({ x: currX, y: currY });
-    if (this.trailPoints.length > this.maxTrailLength) {
-      this.trailPoints.shift();
+  updateAndDrawTrail(trajectoryIndex, currX, currY, palette, isAudible) {
+    const trail = this.trails[trajectoryIndex];
+    trail.push({ x: currX, y: currY });
+    if (trail.length > this.maxTrailLength) {
+      trail.shift();
     }
+
+    if (!isAudible) return;
 
     const ctx = this.ctx;
     ctx.save();
+    const len = trail.length;
 
-    const len = this.trailPoints.length;
     for (let i = 1; i < len; i++) {
-      const prev = this.toScreen(this.trailPoints[i - 1].x, this.trailPoints[i - 1].y);
-      const curr = this.toScreen(this.trailPoints[i].x, this.trailPoints[i].y);
+      const prev = this.toScreen(trail[i - 1].x, trail[i - 1].y);
+      const curr = this.toScreen(trail[i].x, trail[i].y);
       const alpha = (i / len) * 0.7;
 
       ctx.beginPath();
       ctx.moveTo(prev.x, prev.y);
       ctx.lineTo(curr.x, curr.y);
-      ctx.strokeStyle = `rgba(34, 211, 238, ${alpha})`;
+      ctx.strokeStyle = palette.primary;
+      ctx.globalAlpha = alpha;
       ctx.lineWidth = 1 + (i / len) * 3;
       ctx.stroke();
     }
@@ -212,19 +345,20 @@ export class CanvasRenderer {
   drawSpeakers(speakerGains) {
     const ctx = this.ctx;
     ctx.save();
+    const isLight = this.brightnessTheme === 'light' || this.brightnessTheme === 'med-light';
 
     for (const spk of speakerGains) {
       const pos = this.toScreen(spk.x, spk.y);
-      const gain = spk.gain; // 0.0 to 1.0+
+      const gain = spk.gain;
       const db = spk.db;
 
-      // 1. Acoustic Radiation Aura (proportional to gain)
       if (gain > 0.05) {
-        const auraRadius = 18 + gain * 38;
+        const auraRadius = 16 + gain * 36;
         const grad = ctx.createRadialGradient(pos.x, pos.y, 4, pos.x, pos.y, auraRadius);
-        grad.addColorStop(0, `rgba(56, 189, 248, ${gain * 0.6})`);
-        grad.addColorStop(0.6, `rgba(14, 165, 233, ${gain * 0.25})`);
-        grad.addColorStop(1, 'rgba(14, 165, 233, 0)');
+        const auraColor = this.getAuraColor();
+        grad.addColorStop(0, `rgba(${auraColor}, ${gain * 0.6})`);
+        grad.addColorStop(0.6, `rgba(${auraColor}, ${gain * 0.2})`);
+        grad.addColorStop(1, `rgba(${auraColor}, 0)`);
 
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, auraRadius, 0, Math.PI * 2);
@@ -232,45 +366,52 @@ export class CanvasRenderer {
         ctx.fill();
       }
 
-      // 2. Speaker Monitor Body
+      // Speaker Monitor Body
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
-      ctx.fillStyle = '#0f172a'; // Deep navy
+      ctx.arc(pos.x, pos.y, 13, 0, Math.PI * 2);
+      ctx.fillStyle = isLight ? '#e2e8f0' : '#041f14';
       ctx.fill();
-      ctx.strokeStyle = gain > 0.3 ? 'rgba(56, 189, 248, 0.9)' : 'rgba(100, 116, 139, 0.6)';
+      const auraColor = this.getAuraColor();
+      ctx.strokeStyle = gain > 0.3
+        ? `rgba(${auraColor}, 0.95)`
+        : (isLight ? 'rgba(100, 116, 139, 0.5)' : 'rgba(80, 95, 85, 0.5)');
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      // Speaker Cone Inner Accent
+      // Cone Inner Accent
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
-      ctx.fillStyle = gain > 0.1 ? `rgba(56, 189, 248, ${0.3 + gain * 0.7})` : '#1e293b';
+      ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = gain > 0.1
+        ? `rgba(${auraColor}, ${0.3 + gain * 0.7})`
+        : (isLight ? '#cbd5e1' : '#102219');
       ctx.fill();
 
-      // Speaker Label / Channel
-      ctx.fillStyle = '#f8fafc';
+      // Speaker Label (1, 2, 3...)
+      ctx.fillStyle = isLight ? '#0f172a' : '#f8fafc';
       ctx.font = 'bold 9px Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(spk.id, pos.x, pos.y);
 
-      // Meter Bar & dB readout next to speaker
+      // dB badge
       if (this.showMeters) {
-        // Compute position outward from speaker
         const angle = Math.atan2(pos.y - this.centerY, pos.x - this.centerX);
-        const offset = 26;
-        const meterX = pos.x + Math.cos(angle) * offset;
-        const meterY = pos.y + Math.sin(angle) * offset;
+        const offset = 22;
+        const meterX = pos.x - Math.cos(angle) * offset;
+        const meterY = pos.y - Math.sin(angle) * offset;
 
-        // dB badge
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(meterX - 18, meterY - 7, 36, 14);
-        ctx.strokeStyle = gain > 0.4 ? 'rgba(56, 189, 248, 0.7)' : 'rgba(71, 85, 105, 0.5)';
+        ctx.fillStyle = isLight ? 'rgba(241, 245, 249, 0.92)' : 'rgba(7, 17, 12, 0.88)';
+        ctx.fillRect(meterX - 17, meterY - 6, 34, 13);
+        ctx.strokeStyle = gain > 0.4
+          ? `rgba(${auraColor}, 0.7)`
+          : (isLight ? 'rgba(148, 163, 184, 0.5)' : 'rgba(50, 70, 60, 0.5)');
         ctx.lineWidth = 1;
-        ctx.strokeRect(meterX - 18, meterY - 7, 36, 14);
+        ctx.strokeRect(meterX - 17, meterY - 6, 34, 13);
 
-        ctx.fillStyle = gain > 0.5 ? '#38bdf8' : '#94a3b8';
-        ctx.font = '9px monospace';
+        ctx.fillStyle = gain > 0.5
+          ? (this.personality === 'pounamu' ? '#2d6a4f' : '#b45309')
+          : (isLight ? '#64748b' : '#94a3b8');
+        ctx.font = '8px monospace';
         ctx.fillText(`${db > -60 ? db.toFixed(1) : '-∞'}dB`, meterX, meterY);
       }
     }
@@ -278,84 +419,309 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  drawRawLagIndicator(engineState) {
+  drawVectorialWipe(wipeState) {
     const ctx = this.ctx;
-    const rawPos = this.toScreen(engineState.rawX, engineState.rawY);
-    const smoothPos = this.toScreen(engineState.x, engineState.y);
+    const pos = this.toScreen(wipeState.wipeX, wipeState.wipeY);
 
     ctx.save();
-    // Connecting lead line
     ctx.beginPath();
-    ctx.moveTo(smoothPos.x, smoothPos.y);
-    ctx.lineTo(rawPos.x, rawPos.y);
-    ctx.strokeStyle = 'rgba(244, 114, 182, 0.5)'; // Pink target lead
-    ctx.setLineDash([3, 3]);
-    ctx.lineWidth = 1.5;
+    ctx.arc(pos.x, pos.y, 28, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 18;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(this.centerX - this.radiusPx, pos.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = 'rgba(248, 113, 113, 0.6)';
+    ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Target ghost crosshair
-    ctx.setLineDash([]);
-    ctx.strokeStyle = 'rgba(244, 114, 182, 0.7)';
-    ctx.strokeRect(rawPos.x - 4, rawPos.y - 4, 8, 8);
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
     ctx.restore();
   }
 
-  drawSoundPuck(engineState) {
+  drawIpeAmareloStrata() {
     const ctx = this.ctx;
-    const pos = this.toScreen(engineState.x, engineState.y);
+    ctx.save();
+    const strata = [
+      { r: 0.90, name: 'CANOPY (HIGH)', color: 'rgba(255, 190, 11, 0.45)', fill: 'rgba(255, 190, 11, 0.04)' },
+      { r: 0.60, name: 'UNDERSTORY (MID)', color: 'rgba(251, 86, 7, 0.45)', fill: 'rgba(251, 86, 7, 0.04)' },
+      { r: 0.28, name: 'TERRA ROXA (LOW)', color: 'rgba(128, 14, 19, 0.55)', fill: 'rgba(128, 14, 19, 0.06)' }
+    ];
+
+    for (const s of strata) {
+      const rPx = s.r * this.radiusPx;
+      ctx.beginPath();
+      ctx.arc(this.centerX, this.centerY, rPx, 0, Math.PI * 2);
+      ctx.fillStyle = s.fill;
+      ctx.fill();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 6]);
+      ctx.stroke();
+
+      ctx.fillStyle = s.color;
+      ctx.font = '8px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.setLineDash([]);
+      ctx.fillText(s.name, this.centerX + 12, this.centerY - rPx + 10);
+    }
+    ctx.restore();
+  }
+
+  drawBlauertMedianBands() {
+    const ctx = this.ctx;
+    ctx.save();
+    // 4 kHz Front Plane Highlight
+    const frontGrad = ctx.createLinearGradient(this.centerX, this.centerY - this.radiusPx, this.centerX, this.centerY);
+    frontGrad.addColorStop(0, 'rgba(58, 134, 255, 0.08)');
+    frontGrad.addColorStop(1, 'rgba(58, 134, 255, 0)');
+    ctx.fillStyle = frontGrad;
+    ctx.fillRect(this.centerX - this.radiusPx, this.centerY - this.radiusPx, this.radiusPx * 2, this.radiusPx);
+
+    // 1 kHz Rear Plane Highlight
+    const rearGrad = ctx.createLinearGradient(this.centerX, this.centerY, this.centerX, this.centerY + this.radiusPx);
+    rearGrad.addColorStop(0, 'rgba(114, 9, 183, 0)');
+    rearGrad.addColorStop(1, 'rgba(114, 9, 183, 0.08)');
+    ctx.fillStyle = rearGrad;
+    ctx.fillRect(this.centerX - this.radiusPx, this.centerY, this.radiusPx * 2, this.radiusPx);
+
+    // 8 kHz Overhead Core Circle
+    ctx.beginPath();
+    ctx.arc(this.centerX, this.centerY, this.radiusPx * 0.35, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 245, 212, 0.25)';
+    ctx.setLineDash([3, 4]);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(0, 245, 212, 0.5)';
+    ctx.font = '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('8 kHz Overhead', this.centerX, this.centerY - 4);
+    ctx.restore();
+  }
+
+  drawCalciteCleavageGrid() {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(72, 202, 228, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 6]);
+
+    const a1 = (78 * Math.PI) / 180;
+    const a2 = (101 * Math.PI) / 180;
+    const r = this.radiusPx * 1.05;
+
+    ctx.beginPath();
+    ctx.moveTo(this.centerX - r * Math.cos(a1), this.centerY - r * Math.sin(a1));
+    ctx.lineTo(this.centerX + r * Math.cos(a1), this.centerY + r * Math.sin(a1));
+    ctx.moveTo(this.centerX - r * Math.cos(a2), this.centerY - r * Math.sin(a2));
+    ctx.lineTo(this.centerX + r * Math.cos(a2), this.centerY + r * Math.sin(a2));
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  drawBilobaDirectivityLobes(t) {
+    if (!t || !t.active || !this.figuresEngine || !t.state) return;
+    if (!Number.isFinite(t.state.x) || !Number.isFinite(t.state.y)) return;
+    const ctx = this.ctx;
+    const pos = this.toScreen(t.state.x, t.state.y);
+    if (!Number.isFinite(pos.x) || !Number.isFinite(pos.y)) return;
+    const caliber = Number.isFinite(this.figuresEngine.caliber) ? this.figuresEngine.caliber : 0.35;
+    const calPx = Math.max(1, 15 + caliber * 55);
+
+    ctx.save();
+    const grad = ctx.createRadialGradient(pos.x, pos.y, 4, pos.x, pos.y, calPx);
+    grad.addColorStop(0, 'rgba(229, 169, 60, 0.25)');
+    grad.addColorStop(1, 'rgba(229, 169, 60, 0)');
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, calPx, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    if (this.figuresEngine.directivity === 'bilobed') {
+      const baseHeading = Math.atan2(t.state.y, t.state.x);
+      const halfLobe = (this.figuresEngine.lobeAngleDeg * Math.PI) / 360;
+      const lobeLen = 22 + caliber * 30;
+
+      [-halfLobe, halfLobe].forEach(offset => {
+        const lx = pos.x + lobeLen * Math.cos(baseHeading + offset);
+        const ly = pos.y - lobeLen * Math.sin(baseHeading + offset);
+        ctx.beginPath();
+        ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(244, 162, 97, 0.8)';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        ctx.lineTo(lx, ly);
+        ctx.strokeStyle = 'rgba(229, 169, 60, 0.5)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+    }
+    ctx.restore();
+  }
+
+  drawKornblumeGhosts(polyStates) {
+    if (!this.blauertEngine || !this.blauertEngine.precedenceEnabled) return;
+    const ctx = this.ctx;
+    ctx.save();
+
+    for (const t of polyStates) {
+      if (!t.active) continue;
+      const res = this.blauertEngine.processCoordinate(t.state.x, t.state.y, t.index);
+      if (res.ghost) {
+        const gPos = this.toScreen(res.ghost.x, res.ghost.y);
+        const mPos = this.toScreen(t.state.x, t.state.y);
+
+        ctx.beginPath();
+        ctx.moveTo(mPos.x, mPos.y);
+        ctx.lineTo(gPos.x, gPos.y);
+        ctx.strokeStyle = 'rgba(58, 134, 255, 0.35)';
+        ctx.setLineDash([2, 3]);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(gPos.x, gPos.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 245, 212, ${res.ghost.alpha})`;
+        ctx.shadowColor = '#00f5d4';
+        ctx.shadowBlur = 6;
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  drawCalciteBirefringentRays(polyStates) {
+    if (!this.birefringenceEngine) return;
+    const ctx = this.ctx;
+    ctx.save();
+
+    for (const t of polyStates) {
+      if (!t.active) continue;
+      const res = this.birefringenceEngine.processCoordinate(t.state.x, t.state.y);
+      const ordPos = this.toScreen(res.ordinary.x, res.ordinary.y);
+      const extPos = this.toScreen(res.extraordinary.x, res.extraordinary.y);
+
+      ctx.beginPath();
+      ctx.moveTo(ordPos.x, ordPos.y);
+      ctx.lineTo(extPos.x, extPos.y);
+      ctx.strokeStyle = 'rgba(72, 202, 228, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+
+      ctx.beginPath();
+      const dSize = 6;
+      ctx.moveTo(extPos.x, extPos.y - dSize);
+      ctx.lineTo(extPos.x + dSize, extPos.y);
+      ctx.lineTo(extPos.x, extPos.y + dSize);
+      ctx.lineTo(extPos.x - dSize, extPos.y);
+      ctx.closePath();
+      ctx.fillStyle = '#ade8f4';
+      ctx.shadowColor = '#48cae4';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+
+      ctx.fillStyle = '#caf0f8';
+      ctx.font = 'bold 8px monospace';
+      ctx.fillText('Te', extPos.x + 8, extPos.y - 4);
+    }
+    ctx.restore();
+  }
+
+  drawIpeAmareloMaresiaSurge() {
+    if (!this.spectralDiffusionEngine || !this.spectralDiffusionEngine.maresiaActive) return;
+    const ctx = this.ctx;
+    ctx.save();
+    const prog = this.spectralDiffusionEngine.maresiaProgress;
+    const r = prog * this.radiusPx * 1.1;
+
+    ctx.beginPath();
+    ctx.arc(this.centerX, this.centerY, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 190, 11, ${0.8 * (1 - prog)})`;
+    ctx.lineWidth = 4;
+    ctx.shadowColor = '#ffbe0b';
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  drawTrajectoryPuck(t, isSelected) {
+    if (!t || !t.state || !Number.isFinite(t.state.x) || !Number.isFinite(t.state.y)) return;
+    const ctx = this.ctx;
+    const s = t.state;
+    const pal = t.palette;
+    const pos = this.toScreen(s.x, s.y);
+    if (!Number.isFinite(pos.x) || !Number.isFinite(pos.y)) return;
 
     ctx.save();
 
     // Focus dispersion ring
-    // Focus 100% = small concentrated circle; Focus 0% = large dispersed field
-    const focusNorm = engineState.focus / 100;
-    const dispersionRadius = 14 + (1 - focusNorm) * 55;
+    const focusNorm = s.focus / 100;
+    const dispersionRadius = 12 + (1 - focusNorm) * 50;
 
-    const focusGrad = ctx.createRadialGradient(pos.x, pos.y, 4, pos.x, pos.y, dispersionRadius);
-    focusGrad.addColorStop(0, 'rgba(52, 211, 153, 0.75)'); // Emerald core
-    focusGrad.addColorStop(0.5, `rgba(45, 212, 191, ${(1 - focusNorm) * 0.35 + 0.15})`);
-    focusGrad.addColorStop(1, 'rgba(45, 212, 191, 0)');
+    const grad = ctx.createRadialGradient(pos.x, pos.y, 3, pos.x, pos.y, dispersionRadius);
+    grad.addColorStop(0, pal.glow || 'rgba(56, 176, 0, 0.5)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, dispersionRadius, 0, Math.PI * 2);
-    ctx.fillStyle = focusGrad;
+    ctx.fillStyle = grad;
     ctx.fill();
 
-    // Focus boundary ring
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, dispersionRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(52, 211, 153, ${0.2 + focusNorm * 0.4})`;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = pal.primary;
+    ctx.globalAlpha = 0.35 + focusNorm * 0.4;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
     ctx.stroke();
+    ctx.globalAlpha = 1.0;
 
     // Core Glowing Puck
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = '#34d399';
-    ctx.shadowBlur = 12;
+    ctx.fillStyle = pal.secondary || '#ffffff';
+    ctx.shadowColor = pal.primary;
+    ctx.shadowBlur = isSelected ? 16 : 8;
     ctx.fill();
 
-    // Puck outer rim
+    if (isSelected) {
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 12, 0, Math.PI * 2);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
-    ctx.strokeStyle = '#10b981';
+    ctx.strokeStyle = pal.primary;
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Sound Position Tooltip Readout
+    // Clean Trajectory Badge Tag (T1, T2, etc.)
     ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.fillRect(pos.x + 12, pos.y - 18, 88, 20);
-    ctx.strokeStyle = 'rgba(52, 211, 153, 0.5)';
-    ctx.strokeRect(pos.x + 12, pos.y - 18, 88, 20);
+    ctx.fillStyle = 'rgba(7, 17, 12, 0.9)';
+    ctx.fillRect(pos.x + 10, pos.y - 14, 24, 14);
+    ctx.strokeStyle = pal.primary;
+    ctx.strokeRect(pos.x + 10, pos.y - 14, 24, 14);
 
-    ctx.fillStyle = '#34d399';
-    ctx.font = '10px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`X:${engineState.x.toFixed(2)} Y:${engineState.y.toFixed(2)}`, pos.x + 16, pos.y - 4);
+    ctx.fillStyle = pal.primary;
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`T${t.id}`, pos.x + 22, pos.y - 7);
 
     ctx.restore();
   }

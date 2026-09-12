@@ -665,29 +665,34 @@ export class CanvasRenderer {
 
     ctx.save();
 
-    // Focus dispersion ring
-    const focusNorm = s.focus / 100;
-    const dispersionRadius = 12 + (1 - focusNorm) * 50;
+    // Focus & Center dispersion radius matching Ableton Live Surround Panner
+    const focusVal = t.spectralState?.focus !== undefined ? t.spectralState.focus : s.focus;
+    const centerVal = t.spectralState?.center !== undefined ? t.spectralState.center : s.center;
+    const dispersionRadius = calculateSurroundPannerDispersionRadius(focusVal, centerVal, this.radiusPx);
 
-    const grad = ctx.createRadialGradient(pos.x, pos.y, 3, pos.x, pos.y, dispersionRadius);
-    grad.addColorStop(0, pal.glow || 'rgba(56, 176, 0, 0.5)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    // Clip dispersion disc to the acoustic surround sound field boundary (speaker perimeter)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(this.centerX, this.centerY, this.radiusPx, 0, Math.PI * 2);
+    ctx.clip();
 
+    // 1. Shaded Dispersion Disc (Ableton Surround Panner representation)
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, dispersionRadius, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
+    const discFillAlpha = isSelected ? 0.24 : 0.18;
+    ctx.fillStyle = getAlphaColor(pal.glow || pal.primary, discFillAlpha);
     ctx.fill();
 
+    // 2. Defined boundary perimeter ring
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, dispersionRadius, 0, Math.PI * 2);
     ctx.strokeStyle = pal.primary;
-    ctx.globalAlpha = 0.35 + focusNorm * 0.4;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]);
+    ctx.globalAlpha = isSelected ? 0.65 : 0.40;
+    ctx.lineWidth = 1.2;
     ctx.stroke();
-    ctx.globalAlpha = 1.0;
+    ctx.restore();
 
-    // Core Glowing Puck
+    // 3. Core Focal Puck (Ableton ring with center crosshair & trajectory glow)
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 7, 0, Math.PI * 2);
@@ -710,6 +715,16 @@ export class CanvasRenderer {
     ctx.lineWidth = 2;
     ctx.stroke();
 
+    // Subtle crosshair at focal center (Ableton Surround Panner style)
+    ctx.beginPath();
+    ctx.moveTo(pos.x - 4, pos.y);
+    ctx.lineTo(pos.x + 4, pos.y);
+    ctx.moveTo(pos.x, pos.y - 4);
+    ctx.lineTo(pos.x, pos.y + 4);
+    ctx.strokeStyle = pal.primary;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
     // Clean Trajectory Badge Tag (T1, T2, etc.)
     ctx.shadowBlur = 0;
     ctx.fillStyle = 'rgba(7, 17, 12, 0.9)';
@@ -726,3 +741,45 @@ export class CanvasRenderer {
     ctx.restore();
   }
 }
+
+/**
+ * Calculates the sound object trajectory dispersion radius matching
+ * Ableton Live's Max For Live Surround Panner device.
+ * Focus [0, 100] (diffuse to pinpoint focus)
+ * Center [0, 100] (center bleed / spread)
+ * Returns radius in pixels scaled to radiusPx (boundary speaker perimeter).
+ */
+export function calculateSurroundPannerDispersionRadius(focus, center, radiusPx) {
+  const focusNorm = Math.max(0, Math.min(100, focus !== undefined ? focus : 50)) / 100;
+  const centerNorm = Math.max(0, Math.min(100, center !== undefined ? center : 50)) / 100;
+
+  // Empirical function fitted from Ableton Live Surround Panner 5x5 control grid:
+  // r_norm = min(1.0, 1.0 / (1.0 + 2.27 * Focus) + 0.26 * Center + 0.17 * Center^2)
+  const normRadius = Math.min(
+    1.0,
+    (1.0 / (1.0 + 2.27 * focusNorm)) + 0.26 * centerNorm + 0.17 * centerNorm * centerNorm
+  );
+
+  return normRadius * radiusPx;
+}
+
+function getAlphaColor(colorStr, alpha) {
+  if (!colorStr) return `rgba(180, 200, 220, ${alpha})`;
+  if (colorStr.startsWith('rgba')) {
+    return colorStr.replace(/[\d\.]+\)$/, `${alpha})`);
+  }
+  if (colorStr.startsWith('rgb')) {
+    return colorStr.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
+  }
+  if (colorStr.startsWith('#')) {
+    const hex = colorStr.slice(1);
+    if (hex.length === 6) {
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+  }
+  return colorStr;
+}
+

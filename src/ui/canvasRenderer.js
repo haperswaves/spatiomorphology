@@ -747,20 +747,25 @@ export class CanvasRenderer {
  * Ableton Live's Max For Live Surround Panner device.
  * Focus [0, 100] (diffuse to pinpoint focus)
  * Center [0, 100] (center bleed / spread)
- * Returns radius in pixels scaled to radiusPx (boundary speaker perimeter).
+ * Returns radius in pixels scaled to radiusPx.
+ * Scales proportionally to the acoustic field, matching the exact visual proportions
+ * of the Ableton reference device (~18.7px at Focus 100/Center 0 up to ~61px max at Focus 0
+ * on a standard ~314px soundstage).
  */
 export function calculateSurroundPannerDispersionRadius(focus, center, radiusPx) {
   const focusNorm = Math.max(0, Math.min(100, focus !== undefined ? focus : 50)) / 100;
   const centerNorm = Math.max(0, Math.min(100, center !== undefined ? center : 50)) / 100;
 
-  // Empirical function fitted from Ableton Live Surround Panner 5x5 control grid:
-  // r_norm = min(1.0, 1.0 / (1.0 + 2.27 * Focus) + 0.26 * Center + 0.17 * Center^2)
-  const normRadius = Math.min(
-    1.0,
-    (1.0 / (1.0 + 2.27 * focusNorm)) + 0.26 * centerNorm + 0.17 * centerNorm * centerNorm
+  // Base Ableton Surround Panner model (18.7px to 61px on standard reference):
+  // R_ableton = min(61.0, 61.0 / (1.0 + 2.27 * Focus) + 16.0 * Center + 10.4 * Center^2)
+  const abletonBaseRadius = Math.min(
+    61.0,
+    (61.0 / (1.0 + 2.27 * focusNorm)) + 16.0 * centerNorm + 10.4 * centerNorm * centerNorm
   );
 
-  return normRadius * radiusPx;
+  // Proportional scale factor relative to standard acoustic field radius (314.5px):
+  const scale = (radiusPx && radiusPx > 0) ? (radiusPx / 314.5) : 1.0;
+  return abletonBaseRadius * scale;
 }
 
 function getAlphaColor(colorStr, alpha) {

@@ -505,36 +505,44 @@ assert(Math.abs(rotatedSampled[0].x - sampled[0].x) > 0.05, `Sampled path update
 
 // 9. Ableton Live Surround Panner Focus & Center Dispersion Radius Model
 console.log('\n[9] Testing Ableton Live Surround Panner Focus & Center Dispersion Radius Model:');
-const R_TEST = 100; // 100px test radius
+const R_STD = 314.5; // Standard 314.5px acoustic field radius
 
-// Focus 0% must fill entire soundfield (1.0 * R) regardless of Center
+// Focus 0% yields max ~61.0px radius regardless of Center on standard field
 for (const c of [0, 25, 50, 75, 100]) {
-  const r = calculateSurroundPannerDispersionRadius(0, c, R_TEST);
-  assert(Math.abs(r - R_TEST) < 0.001, `Focus 0%, Center ${c}% fills entire acoustic boundary (got ${r}, expected ${R_TEST})`);
+  const r = calculateSurroundPannerDispersionRadius(0, c, R_STD);
+  assert(Math.abs(r - 61.0) < 0.01, `Focus 0%, Center ${c}% reaches max ~61px radius (got ${r.toFixed(1)}, expected 61.0)`);
 }
 
-// Focus 100%, Center 0% (pinpoint localization) -> ~0.306 * R
-const r_f100_c0 = calculateSurroundPannerDispersionRadius(100, 0, R_TEST);
-assert(Math.abs(r_f100_c0 - 30.6) < 1.0, `Focus 100%, Center 0% yields tight focal radius ~30.6px (got ${r_f100_c0.toFixed(1)})`);
+// Focus 100%, Center 0% (pinpoint localization) -> ~18.7px
+const r_f100_c0 = calculateSurroundPannerDispersionRadius(100, 0, R_STD);
+assert(Math.abs(r_f100_c0 - 18.7) < 0.5, `Focus 100%, Center 0% yields tight focal radius ~18.7px (got ${r_f100_c0.toFixed(1)})`);
 
-// Focus 100%, Center 100% -> ~73.6px
-const r_f100_c100 = calculateSurroundPannerDispersionRadius(100, 100, R_TEST);
-assert(Math.abs(r_f100_c100 - 73.6) < 1.5, `Focus 100%, Center 100% expands to ~73.6px (got ${r_f100_c100.toFixed(1)})`);
+// Focus 50%, Center 0% -> ~28.6px
+const r_f50_c0 = calculateSurroundPannerDispersionRadius(50, 0, R_STD);
+assert(Math.abs(r_f50_c0 - 28.6) < 0.5, `Focus 50%, Center 0% yields ~28.6px (got ${r_f50_c0.toFixed(1)})`);
 
-// Focus 50%, Center 50% -> ~64.0px
-const r_f50_c50 = calculateSurroundPannerDispersionRadius(50, 50, R_TEST);
-assert(Math.abs(r_f50_c50 - 64.0) < 1.5, `Focus 50%, Center 50% yields ~64.0px (got ${r_f50_c50.toFixed(1)})`);
+// Focus 25%, Center 0% -> ~38.9px
+const r_f25_c0 = calculateSurroundPannerDispersionRadius(25, 0, R_STD);
+assert(Math.abs(r_f25_c0 - 38.9) < 0.5, `Focus 25%, Center 0% yields ~38.9px (got ${r_f25_c0.toFixed(1)})`);
 
-// Focus 25%, Center 100% -> capped at 100px
-const r_f25_c100 = calculateSurroundPannerDispersionRadius(25, 100, R_TEST);
-assert(Math.abs(r_f25_c100 - 100) < 0.001, `Focus 25%, Center 100% is cleanly clamped to boundary (got ${r_f25_c100})`);
+// Focus 100%, Center 100% -> ~45.1px
+const r_f100_c100 = calculateSurroundPannerDispersionRadius(100, 100, R_STD);
+assert(Math.abs(r_f100_c100 - 45.1) < 0.5, `Focus 100%, Center 100% expands to ~45.1px (got ${r_f100_c100.toFixed(1)})`);
+
+// Focus 25%, Center 100% -> cleanly capped at 61px
+const r_f25_c100 = calculateSurroundPannerDispersionRadius(25, 100, R_STD);
+assert(Math.abs(r_f25_c100 - 61.0) < 0.01, `Focus 25%, Center 100% is cleanly clamped to 61px (got ${r_f25_c100.toFixed(1)})`);
+
+// Proportional canvas scaling test: at 2x radiusPx, dispersion radius doubles
+const r_scaled = calculateSurroundPannerDispersionRadius(100, 0, R_STD * 2.0);
+assert(Math.abs(r_scaled - r_f100_c0 * 2.0) < 0.01, `Dispersion radius scales proportionally with acoustic field size`);
 
 // Monotonicity checks:
 // As Focus increases (for fixed Center), dispersion radius decreases
 for (let c = 0; c <= 100; c += 25) {
-  let prevR = calculateSurroundPannerDispersionRadius(0, c, R_TEST);
+  let prevR = calculateSurroundPannerDispersionRadius(0, c, R_STD);
   for (let f = 25; f <= 100; f += 25) {
-    const curR = calculateSurroundPannerDispersionRadius(f, c, R_TEST);
+    const curR = calculateSurroundPannerDispersionRadius(f, c, R_STD);
     assert(curR <= prevR + 0.001, `Dispersion radius decreases as Focus increases at Center ${c}% (f=${f}: ${curR.toFixed(1)} <= ${prevR.toFixed(1)})`);
     prevR = curR;
   }
@@ -542,9 +550,9 @@ for (let c = 0; c <= 100; c += 25) {
 
 // As Center increases (for fixed Focus > 0), dispersion radius increases
 for (let f = 25; f <= 100; f += 25) {
-  let prevR = calculateSurroundPannerDispersionRadius(f, 0, R_TEST);
+  let prevR = calculateSurroundPannerDispersionRadius(f, 0, R_STD);
   for (let c = 25; c <= 100; c += 25) {
-    const curR = calculateSurroundPannerDispersionRadius(f, c, R_TEST);
+    const curR = calculateSurroundPannerDispersionRadius(f, c, R_STD);
     assert(curR >= prevR - 0.001, `Dispersion radius increases as Center increases at Focus ${f}% (c=${c}: ${curR.toFixed(1)} >= ${prevR.toFixed(1)})`);
     prevR = curR;
   }
